@@ -68,7 +68,7 @@ function Header({ selectedLLM, onLLMChange }) {
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    Routes
+                    Route Optimization
                   </Link>
                   <Link
                     to="/stations"
@@ -78,7 +78,7 @@ function Header({ selectedLLM, onLLMChange }) {
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    Stations
+                    Station Tracking
                   </Link>
                 </nav>
 
@@ -175,7 +175,7 @@ function Header({ selectedLLM, onLLMChange }) {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Routes
+                Route Optimization
               </Link>
               <Link
                 to="/stations"
@@ -186,7 +186,7 @@ function Header({ selectedLLM, onLLMChange }) {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Stations
+                Station Tracking
               </Link>
 
               {/* Mobile LLM Dropdown */}

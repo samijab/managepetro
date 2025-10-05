@@ -8,7 +8,7 @@ function ETADisplay({ eta }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Estimated Arrival
+        Trip Estimation
       </h3>
 
       <div className="space-y-4">
@@ -19,7 +19,7 @@ function ETADisplay({ eta }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900">{eta.arrival}</p>
-            <p className="text-sm text-gray-500">Arrival time</p>
+            <p className="text-sm text-gray-500">Estimated Time of Arrival</p>
           </div>
         </div>
 
@@ -32,7 +32,7 @@ function ETADisplay({ eta }) {
             <p className="text-xl font-semibold text-gray-900">
               {eta.duration}
             </p>
-            <p className="text-sm text-gray-500">Travel time</p>
+            <p className="text-sm text-gray-500">Travel Time</p>
           </div>
         </div>
 
@@ -45,7 +45,7 @@ function ETADisplay({ eta }) {
             <p className="text-xl font-semibold text-gray-900">
               {eta.distance}
             </p>
-            <p className="text-sm text-gray-500">Total distance</p>
+            <p className="text-sm text-gray-500">Total Trip</p>
           </div>
         </div>
       </div>

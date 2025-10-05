@@ -4,7 +4,7 @@ function InstructionsList({ instructions }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Step-by-Step Directions
+        Turn-by-Turn Directions
       </h3>
 
       <div className="space-y-3">
