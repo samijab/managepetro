@@ -133,7 +133,7 @@ function StationsPage() {
               <div className="flex items-center justify-center">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-lg">S</span>
+                    <span className="text-blue-600 font-bold text-lg">⛽</span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">
@@ -155,7 +155,7 @@ function StationsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">
-                      High Priority
+                      High Priority Stations
                     </p>
                     <p className="text-2xl font-semibold text-gray-900">
                       {stations.filter((s) => s.priority === "High").length}
@@ -173,7 +173,7 @@ function StationsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">
-                      Low Fuel
+                      Low Fuel Stations
                     </p>
                     <p className="text-2xl font-semibold text-gray-900">
                       {stations.filter((s) => s.fuel_level < 30).length}
@@ -191,7 +191,7 @@ function StationsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">
-                      Well Stocked
+                      Well Stocked Stations
                     </p>
                     <p className="text-2xl font-semibold text-gray-900">
                       {stations.filter((s) => s.fuel_level >= 70).length}
