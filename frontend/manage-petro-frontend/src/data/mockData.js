@@ -67,4 +67,25 @@ export const mockStations = [
     country: "Canada",
     demand_liters: 8000,
   },
+  {
+    station_id: "station-003",
+    name: "Airport Service Center",
+    city: "Richmond",
+    country: "Canada",
+    demand_liters: 25000,
+  },
+  {
+    station_id: "station-004",
+    name: "Industrial District Fuel",
+    city: "Surrey",
+    country: "Canada",
+    demand_liters: 12000,
+  },
+  {
+    station_id: "station-005",
+    name: "Mountain View Station",
+    city: "North Vancouver",
+    country: "Canada",
+    demand_liters: 9000,
+  },
 ];
