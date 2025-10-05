@@ -130,71 +130,73 @@ function StationsPage() {
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-sm">S</span>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600 font-bold text-lg">S</span>
                   </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Stations
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {stations.length}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Total Stations
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stations.length}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-red-600 font-bold text-sm">!</span>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <span className="text-red-600 font-bold text-lg">!</span>
                   </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">
-                    High Priority
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {stations.filter((s) => s.priority === "High").length}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      High Priority
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stations.filter((s) => s.priority === "High").length}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <span className="text-yellow-600 font-bold text-sm">⚠</span>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <span className="text-yellow-600 font-bold text-lg">⚠</span>
                   </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Low Fuel</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {stations.filter((s) => s.fuel_level < 30).length}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Low Fuel
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stations.filter((s) => s.fuel_level < 30).length}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-green-600 font-bold text-sm">✓</span>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <span className="text-green-600 font-bold text-lg">✓</span>
                   </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">
-                    Well Stocked
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {stations.filter((s) => s.fuel_level >= 70).length}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Well Stocked
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stations.filter((s) => s.fuel_level >= 70).length}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
