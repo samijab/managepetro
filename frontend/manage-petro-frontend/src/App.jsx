@@ -4,58 +4,27 @@ import RouteForm from "./components/RouteForm";
 import ActionButtons from "./components/ActionButtons";
 import ETADisplay from "./components/ETADisplay";
 import InstructionsList from "./components/InstructionsList";
+import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorMessage from "./components/ErrorMessage";
+import { useRouteData } from "./hooks/useRouteData";
 
 function App() {
   const [selectedLLM, setSelectedLLM] = useState("gpt-4");
-  const [routeData, setRouteData] = useState({
-    from: "",
-    to: "",
-    eta: null,
-    instructions: [],
-  });
+  const { routeData, calculateRoute, clearRoute, isLoading, error } =
+    useRouteData();
 
-  const handleRouteSubmit = (from, to) => {
-    // Simulate route calculation
-    setRouteData({
-      from,
-      to,
-      eta: {
-        arrival: "2:45 PM",
-        duration: "1h 23m",
-        distance: "67.2 km",
-      },
-      instructions: [
-        {
-          id: 1,
-          text: "Head north on Main Street toward Highway 1",
-          distance: "0.5 km",
-        },
-        { id: 2, text: "Turn right onto Highway 1 East", distance: "15.2 km" },
-        {
-          id: 3,
-          text: "Take exit 42 for Industrial Boulevard",
-          distance: "0.8 km",
-        },
-        {
-          id: 4,
-          text: "Turn left onto Industrial Boulevard",
-          distance: "2.1 km",
-        },
-        {
-          id: 5,
-          text: "Destination will be on your right",
-          distance: "0.3 km",
-        },
-      ],
-    });
+  const handleRouteSubmit = async (from, to) => {
+    await calculateRoute(from, to, selectedLLM);
   };
 
   const handleEditParameters = () => {
     console.log("Edit parameters clicked");
+    // TODO: Open parameters modal
   };
 
   const handleViewReferences = () => {
     console.log("View references clicked");
+    // TODO: Open references modal
   };
 
   return (
@@ -64,14 +33,18 @@ function App() {
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-8">
-          <RouteForm onSubmit={handleRouteSubmit} />
+          <RouteForm onSubmit={handleRouteSubmit} isLoading={isLoading} />
 
           <ActionButtons
             onEditParameters={handleEditParameters}
             onViewReferences={handleViewReferences}
           />
 
-          {routeData.eta && (
+          {error && <ErrorMessage message={error} onDismiss={clearRoute} />}
+
+          {isLoading && <LoadingSpinner />}
+
+          {routeData.eta && !isLoading && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1">
                 <ETADisplay eta={routeData.eta} />
