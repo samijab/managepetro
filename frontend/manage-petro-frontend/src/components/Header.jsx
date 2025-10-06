@@ -5,6 +5,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
+import managePetroLogo from "../assets/manage-petro-logo.png";
 
 const llmOptions = [
   { value: "gpt-4", label: "GPT-4" },
@@ -38,20 +39,22 @@ function Header({ selectedLLM, onLLMChange }) {
     <>
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-4">
-          <div className="flex items-center h-16">
+          <div className="flex items-center h-20">
             {/* Logo - Fixed width */}
             <div className="flex items-center flex-shrink-0 w-64">
               <Link
                 to="/"
-                className="flex items-center space-x-2"
+                className="flex items-center"
                 onClick={closeMobileMenu}
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">MP</span>
+                {/* Logo with consistent brand colors */}
+                <div className="w-40 h-16 bg-gradient-to-br from-slate-600 to-slate-700 border border-slate-500 rounded-xl px-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <img
+                    src={managePetroLogo}
+                    alt="Manage Petro"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900">
-                  Manage Petro
-                </span>
               </Link>
             </div>
 
@@ -60,7 +63,7 @@ function Header({ selectedLLM, onLLMChange }) {
               <nav className="flex items-center space-x-6">
                 <Link
                   to="/"
-                  className={`text-sm font-medium transition-colors ${
+                  className={`text-lg font-medium transition-colors ${
                     location.pathname === "/"
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"
@@ -70,13 +73,13 @@ function Header({ selectedLLM, onLLMChange }) {
                 </Link>
                 <Link
                   to="/stations"
-                  className={`text-sm font-medium transition-colors ${
+                  className={`text-lg font-medium transition-colors ${
                     location.pathname === "/stations"
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
-                  Station Tracking
+                  Stations
                 </Link>
               </nav>
             </div>
@@ -164,7 +167,7 @@ function Header({ selectedLLM, onLLMChange }) {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Station Tracking
+                Stations
               </Link>
 
               {/* Mobile LLM Dropdown */}
@@ -201,7 +204,7 @@ function Header({ selectedLLM, onLLMChange }) {
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-30 bg-black bg-opacity-25"
+          className="lg:hidden fixed inset-0 z-30 bg-black opacity-40"
           onClick={closeMobileMenu}
         />
       )}
