@@ -1,4 +1,3 @@
-# xanders branch
 # Manage Petro – ISSP Project
 
 Monorepo with a React (Vite) frontend and a Python FastAPI backend.
