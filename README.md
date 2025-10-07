@@ -13,8 +13,12 @@ Monorepo with a React (Vite) frontend and a Python FastAPI backend.
 ```
 ISSP Project/
 ├─ backend/                 # FastAPI app (main.py, requirements.txt)
-└─ frontend/
-   └─ manage-petro-frontend # Vite + React app
+└─ frontend/                # Vite + React app
+   ├─ public/
+   ├─ src/
+   ├─ package.json
+   ├─ vite.config.js
+   └─ index.html
 ```
 
 ## Git Workflow
@@ -86,7 +90,7 @@ pip install -r requirements.txt      # requirements.txt contains: fastapi[standa
 ### Frontend (Vite + React)
 
 ```powershell
-cd "frontend/manage-petro-frontend"
+cd "frontend"
 npm install
 ```
 
@@ -105,7 +109,7 @@ fastapi dev main.py
 2. Frontend (Vite)
 
 ```powershell
-cd "frontend/manage-petro-frontend"
+cd "frontend"
 npm run dev
 # App: http://localhost:3000
 ```
