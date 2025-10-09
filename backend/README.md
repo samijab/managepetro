@@ -14,4 +14,4 @@ While inside /backend:
     To stop the database `docker compose down`
     To stop the database and remove data in it `docker compose down -v`
     To check docker running `docker ps`
-    To access MySQL `docker exec -it manage-petro-mysql mysql -u mp_app -p devpass manage_petro`
+    To access MySQL `docker exec -it manage-petro-mysql mysql -ump_app -pdevpass manage_petro`
