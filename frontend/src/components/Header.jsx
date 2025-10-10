@@ -5,6 +5,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
+import managePetroLogo from "../assets/manage-petro-logo.png";
 
 const llmOptions = [
   { value: "gpt-4", label: "GPT-4" },
@@ -14,10 +15,10 @@ const llmOptions = [
 ];
 
 const pageConfig = {
-  "/": { title: "Route Optimization", showLLMDropdown: true },
-  "/stations": { title: "Loading Stations", showLLMDropdown: false },
-  "/trucks": { title: "Fleet Management", showLLMDropdown: false },
-  "/dashboard": { title: "Dashboard Overview", showLLMDropdown: false },
+  "/": { showLLMDropdown: true },
+  "/stations": { showLLMDropdown: false },
+  "/trucks": { showLLMDropdown: false },
+  "/dashboard": { showLLMDropdown: false },
 };
 
 function Header({ selectedLLM, onLLMChange }) {
@@ -38,72 +39,56 @@ function Header({ selectedLLM, onLLMChange }) {
     <>
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center flex-shrink-0">
+          <div className="flex items-center h-20">
+            {/* Logo - Fixed width */}
+            <div className="flex items-center flex-shrink-0 w-64">
               <Link
                 to="/"
-                className="flex items-center space-x-2"
+                className="flex items-center"
                 onClick={closeMobileMenu}
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">MP</span>
+                {/* Logo with consistent brand colors */}
+                <div className="w-40 h-16 bg-gradient-to-br from-slate-600 to-slate-700 border border-slate-500 rounded-xl px-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <img
+                    src={managePetroLogo}
+                    alt="Manage Petro"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900">
-                  Manage Petro
-                </span>
               </Link>
             </div>
 
-            {/* Center Section - Navigation and Title */}
-            <div className="hidden lg:flex items-center justify-center flex-1 px-8">
-              <div className="flex items-center space-x-8">
-                {/* Desktop Navigation */}
-                <nav className="flex items-center space-x-6">
-                  <Link
-                    to="/"
-                    className={`text-sm font-medium transition-colors ${
-                      location.pathname === "/"
-                        ? "text-blue-600"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Route Optimization
-                  </Link>
-                  <Link
-                    to="/stations"
-                    className={`text-sm font-medium transition-colors ${
-                      location.pathname === "/stations"
-                        ? "text-blue-600"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Station Tracking
-                  </Link>
-                </nav>
-
-                {/* Vertical Divider */}
-                <div className="h-6 w-px bg-gray-300"></div>
-
-                {/* Page Title */}
-                <h1 className="text-xl font-bold text-gray-800 whitespace-nowrap">
-                  {currentPageConfig.title}
-                </h1>
-              </div>
+            {/* Center Section - Navigation (Fixed position) */}
+            <div className="hidden lg:flex items-center justify-center flex-1">
+              <nav className="flex items-center space-x-6">
+                <Link
+                  to="/"
+                  className={`text-lg font-medium transition-colors ${
+                    location.pathname === "/"
+                      ? "text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Route Optimization
+                </Link>
+                <Link
+                  to="/stations"
+                  className={`text-lg font-medium transition-colors ${
+                    location.pathname === "/stations"
+                      ? "text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Stations
+                </Link>
+              </nav>
             </div>
 
-            {/* Mobile Title - Only shown on medium screens */}
-            <div className="hidden md:block lg:hidden flex-1 text-center">
-              <h1 className="text-lg font-bold text-gray-800">
-                {currentPageConfig.title}
-              </h1>
-            </div>
-
-            {/* Right side - LLM Dropdown and Mobile Menu */}
-            <div className="flex items-center space-x-2 flex-shrink-0">
-              {/* LLM Dropdown - Desktop */}
-              {currentPageConfig.showLLMDropdown && (
-                <div className="hidden sm:block relative">
+            {/* Right side - Fixed width to prevent shifting */}
+            <div className="flex items-center justify-end space-x-2 flex-shrink-0 w-64">
+              {/* LLM Dropdown - Always reserve space */}
+              <div className="hidden sm:block relative">
+                {currentPageConfig.showLLMDropdown ? (
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 lg:px-4 py-2 rounded-lg transition-colors"
@@ -113,31 +98,34 @@ function Header({ selectedLLM, onLLMChange }) {
                     </span>
                     <ChevronDownIcon className="w-4 h-4 text-gray-500" />
                   </button>
+                ) : (
+                  // Invisible placeholder to maintain spacing
+                  <div className="w-24 h-10"></div>
+                )}
 
-                  {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                      <div className="py-1">
-                        {llmOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              onLLMChange(option.value);
-                              setIsDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                              selectedLLM === option.value
-                                ? "bg-blue-50 text-blue-600 font-medium"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
+                {isDropdownOpen && currentPageConfig.showLLMDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      {llmOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            onLLMChange(option.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                            selectedLLM === option.value
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
 
               {/* Mobile Menu Button */}
               <button
@@ -158,13 +146,6 @@ function Header({ selectedLLM, onLLMChange }) {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 bg-white">
             <div className="px-4 pt-2 pb-3 space-y-1">
-              {/* Mobile Page Title */}
-              <div className="md:hidden px-2 py-3 border-b border-gray-100">
-                <h1 className="text-lg font-bold text-gray-800">
-                  {currentPageConfig.title}
-                </h1>
-              </div>
-
               {/* Mobile Navigation Links */}
               <Link
                 to="/"
@@ -186,7 +167,7 @@ function Header({ selectedLLM, onLLMChange }) {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Station Tracking
+                Stations
               </Link>
 
               {/* Mobile LLM Dropdown */}
@@ -223,7 +204,7 @@ function Header({ selectedLLM, onLLMChange }) {
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-30 bg-black bg-opacity-25"
+          className="lg:hidden fixed inset-0 z-30 bg-black opacity-40"
           onClick={closeMobileMenu}
         />
       )}
