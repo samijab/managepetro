@@ -1,13 +1,75 @@
 from typing import Union
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, ConfigDict
 
-from fastapi import FastAPI
-
-import requests
-
-
-app = FastAPI()
+# Import your services
+from services.llm_service import LLMService
+from services.api_utils import get_weather, calculate_route, calculate_reachable_range
 
 
+app = FastAPI(
+    title="Manage Petro API",
+    description="API for managing fuel delivery operations with AI-powered route optimization",
+    version="1.0.0",
+)
+
+# Initialize services
+llm_service = LLMService()
+
+
+# Pydantic models for request/response (Updated for Pydantic v2)
+class RouteRequest(BaseModel):
+    model_config = ConfigDict(
+        str_strip_whitespace=True, validate_assignment=True, extra="forbid"
+    )
+
+    from_location: str = Field(
+        ..., min_length=2, max_length=100, description="Starting location"
+    )
+    to_location: str = Field(
+        ..., min_length=2, max_length=100, description="Destination location"
+    )
+    llm_model: str = Field(default="gemini-2.5-flash", description="AI model to use")
+    use_ai_optimization: bool = Field(
+        default=True, description="Enable AI-powered optimization"
+    )
+
+
+class WeatherRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    city: str = Field(
+        ..., min_length=1, max_length=50, description="City name for weather data"
+    )
+
+
+class TomTomRouteRequest(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
+    origin_lat: float = Field(..., ge=-90, le=90, description="Origin latitude")
+    origin_lon: float = Field(..., ge=-180, le=180, description="Origin longitude")
+    dest_lat: float = Field(..., ge=-90, le=90, description="Destination latitude")
+    dest_lon: float = Field(..., ge=-180, le=180, description="Destination longitude")
+    travel_mode: str = Field(default="car", description="Travel mode")
+    route_type: str = Field(default="fastest", description="Route optimization type")
+
+
+class ReachableRangeRequest(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
+    origin_lat: float = Field(..., ge=-90, le=90, description="Origin latitude")
+    origin_lon: float = Field(..., ge=-180, le=180, description="Origin longitude")
+    budget_value: float = Field(
+        ..., gt=0, description="Budget value for range calculation"
+    )
+    budget_type: str = Field(
+        default="distance",
+        pattern="^(distance|time|fuel|energy)$",
+        description="Budget type",
+    )
+
+
+# Existing endpoints (keep unchanged)
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -18,117 +80,97 @@ def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
 
-#WEATHER API
-API_KEY = "d001fb8e247c4e4ab1b40950251010"
+@app.post("/api/routes/optimize")
+async def optimize_route_ai(request: RouteRequest):
+    """AI-powered route optimization using markdown-refined prompts"""
+    try:
+        if request.use_ai_optimization:
+            # Use AI service with markdown refinement
+            result = await llm_service.optimize_route(
+                request.from_location, request.to_location, request.llm_model
+            )
+            return result
+        else:
+            # Fallback to basic response
+            return {
+                "message": "AI optimization disabled",
+                "from_location": request.from_location,
+                "to_location": request.to_location,
+            }
 
-def get_weather(city):
-    if city is None or not str(city).strip():
-        raise ValueError("City parameter must not be None or empty.")
-    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
-    response = requests.get(url)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    if response.status_code == 200:
-        data = response.json()
+
+# Weather endpoint (refactored)
+@app.post("/api/weather")
+def get_weather_info(request: WeatherRequest):
+    """Get current weather information for a city"""
+    try:
+        weather_data = get_weather(request.city)
+        return {"city": request.city, "weather": weather_data}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Weather service error: {str(e)}")
+
+
+# TomTom route endpoint (refactored)
+@app.post("/api/routes/tomtom")
+def calculate_tomtom_route(request: TomTomRouteRequest):
+    """Calculate route using TomTom API"""
+    try:
+        origin = (request.origin_lat, request.origin_lon)
+        destination = (request.dest_lat, request.dest_lon)
+
+        route_data = calculate_route(
+            origin=origin,
+            destination=destination,
+            travelMode=request.travel_mode,
+            routeType=request.route_type,
+        )
+
+        return {"origin": origin, "destination": destination, "route_data": route_data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TomTom routing error: {str(e)}")
+
+
+# Reachable range endpoint (refactored)
+@app.post("/api/routes/reachable-range")
+def calculate_range(request: ReachableRangeRequest):
+    """Calculate reachable range using TomTom API"""
+    try:
+        origin = (request.origin_lat, request.origin_lon)
+
+        range_data = calculate_reachable_range(
+            origin=origin,
+            budget_value=request.budget_value,
+            budget_type=request.budget_type,
+        )
+
         return {
-            "temp_c": data["current"]["temp_c"],
-            "condition": data["current"]["condition"]["text"],
-            "wind_kph": data["current"]["wind_kph"]
+            "origin": origin,
+            "budget_type": request.budget_type,
+            "budget_value": request.budget_value,
+            "range_data": range_data,
         }
 
-    else:
-        raise Exception(f"Weather API error: {response.status_code} {response.text}")
-    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reachable range error: {str(e)}")
 
-#Routes 
-TOMTOM_API_KEY = "swR56X5HtTayLAASqunc560B2xErmQFq"
 
-def calculate_route(origin,destination, waypoints=None, **options):
-    """
-    Call TomTom’s Calculate Route API.
-    
-    origin: tuple (lat, lon)
-    destination: tuple (lat, lon)
-    waypoints: list of (lat, lon) intermediate points, or None
-    options: extra params like travelMode, routeType, traffic, etc.
-    
-    Returns: parsed JSON, or raises exception
-    """
-
-    # Build the locations path
-    # E.g. "lat1,lon1:lat2,lon2" or with waypoints "lat1,lon1:wp1_lat,wp1_lon:...:lat2,lon2"
-    parts = []
-    parts.append(f"{origin[0]},{origin[1]}")
-    if waypoints:
-        for wp in waypoints:
-            parts.append(f"{wp[0]},{wp[1]}")
-    parts.append(f"{destination[0]},{destination[1]}")
-    locations = ":".join(parts)
-    
-    base_url = "https://api.tomtom.com/routing/1/calculateRoute"
-    content_type = "json"  # we want JSON response
-    url = f"{base_url}/{locations}/{content_type}"
-    
-    # Prepare query parameters
-    params = {
-        "key": TOMTOM_API_KEY,
-        # you can include defaults or allow override via options
-        "traffic": True,
-        "routeType": "fastest",
+# Health check endpoint
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "services": {
+            "ai_optimization": "available",
+            "weather_api": "available",
+            "tomtom_routing": "available",
+        },
     }
-    # Add/override with options provided
-    for k, v in options.items():
-        params[k] = v
-    
-    resp = requests.get(url, params=params)
-    if resp.status_code != 200:
-        raise Exception(f"TomTom API error {resp.status_code}: {resp.text}")
-    
-    data = resp.json()
-    # Optionally verify the structure
-    return data
-
-#range
-def calculate_reachable_range(origin, budget_value, budget_type="distance", **options):
-    """
-    Call TomTom's Calculate Reachable Range API.
-    
-    origin: tuple (lat, lon)
-    budget_type: one of "distance", "time", "fuel", "energy"
-    budget_value: the numeric value for that budget
-    options: other optional parameters (routeType, travelMode, consumption model, etc.)
-    
-    Returns parsed JSON response or raises on error.
-    """
-    # Build path part: origin point
-    # Format: {lat},{lon}
-    origin_str = f"{origin[0]},{origin[1]}"
-    base_url = "https://api.tomtom.com/routing/1/calculateReachableRange"
-    content_type = "json"
-    url = f"{base_url}/{origin_str}/{content_type}"
-
-    # Build query parameters
-    params = {
-        "key": TOMTOM_API_KEY
-    }
-
-    # Set exactly one budget parameter
-    if budget_type == "distance":
-        params["distanceBudgetInMeters"] = budget_value
-    elif budget_type == "time":
-        params["timeBudgetInSec"] = budget_value
-    elif budget_type == "fuel":
-        params["fuelBudgetInLiters"] = budget_value
-    elif budget_type == "energy":
-        params["energyBudgetInkWh"] = budget_value
-    else:
-        raise ValueError("Invalid budget_type — must be one of distance, time, fuel, energy")
-
-    # Add the optional parameters the user passed
-    for k, v in options.items():
-        params[k] = v
-
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"TomTom reachable range API error {response.status_code}: {response.text}")
-
-    return response.json()
