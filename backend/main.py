@@ -24,7 +24,7 @@ API_KEY = "d001fb8e247c4e4ab1b40950251010"
 def get_weather(city):
     if city is None or not str(city).strip():
         raise ValueError("City parameter must not be None or empty.")
-    url = f"https://api.weatherapi.com/v1/current,json?key={API_KEY}&q={city}"
+    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
     response = requests.get(url)
 
     if response.status_code == 200:
