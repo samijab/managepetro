@@ -49,3 +49,15 @@ CREATE TABLE station_fuel_levels (
   fuel_level_liters DECIMAL(12,2),
   FOREIGN KEY (station_id) REFERENCES stations(id)
 );
+
+-- WEATHER
+
+CREATE TABLE IF NOT EXISTS weather_data (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  city VARCHAR(100),
+  temperature FLOAT,
+  condition TEXT,
+  wind FLOAT,
+  humidity FLOAT,
+  collected_at TIMESTAMP
+)
