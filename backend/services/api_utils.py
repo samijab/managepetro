@@ -1,17 +1,18 @@
 import requests
 import os
 from dotenv import load_dotenv
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List, Optional
+from models.data_models import WeatherData
 
-# Load environment variables
+
 load_dotenv()
 
-# WEATHER API
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "d001fb8e247c4e4ab1b40950251010")
+TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "swR56X5HtTayLAASqunc560B2xErmQFq")
 
 
-def get_weather(city: str) -> Dict[str, Any]:
-    """Get current weather for a city"""
+def get_weather(city: str) -> WeatherData:
+    """Get current weather for a city - returns standardized WeatherData"""
     if city is None or not str(city).strip():
         raise ValueError("City parameter must not be None or empty.")
 
@@ -20,19 +21,12 @@ def get_weather(city: str) -> Dict[str, Any]:
 
     if response.status_code == 200:
         data = response.json()
-        return {
-            "temp_c": data["current"]["temp_c"],
-            "condition": data["current"]["condition"]["text"],
-            "wind_kph": data["current"]["wind_kph"],
-        }
+        return WeatherData.from_api_response(data)
     else:
         raise Exception(f"Weather API error: {response.status_code} {response.text}")
 
 
 # TOMTOM ROUTING API
-TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "swR56X5HtTayLAASqunc560B2xErmQFq")
-
-
 def calculate_route(
     origin: Tuple[float, float],
     destination: Tuple[float, float],

@@ -1,6 +1,11 @@
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import List
+from models.data_models import (
+    StationData,
+    DeliveryData,
+    WeatherResult,
+)
 
 
 class PromptService:
@@ -21,15 +26,15 @@ class PromptService:
         self,
         from_location: str,
         to_location: str,
-        stations_data: List[Dict],
-        historical_routes: List[Dict],
-        weather_data: Dict,
+        stations_data: List[StationData],
+        historical_routes: List[DeliveryData],
+        weather_data: WeatherResult,
         **kwargs,
     ) -> str:
-        """Create comprehensive prompt with ALL data sources"""
+        """Create comprehensive prompt using standardized data models"""
         template = self.load_template("comprehensive_route_optimization")
 
-        # Format data for prompt
+        # Format data using standardized models
         stations_text = self._format_stations_data(stations_data)
         historical_text = self._format_historical_data(historical_routes)
         weather_text = self._format_weather_data(weather_data)
@@ -50,57 +55,47 @@ class PromptService:
 
         return formatted_prompt
 
-    def _format_stations_data(self, stations: List[Dict]) -> str:
-        """Format station data from your MySQL schema"""
+    def _format_stations_data(self, stations: List[StationData]) -> str:
+        """Format station data using standardized models"""
         if not stations:
             return "No fuel stations data available."
 
         formatted = "Available Fuel Stations:\n"
         for station in stations:
-            # FIXED to match your actual schema
-            formatted += (
-                f"- {station.get('name', 'Unknown')} ({station.get('code', 'N/A')})\n"
-            )
-            formatted += f"  Location: {station.get('city', 'Unknown')}, {station.get('region', 'Unknown')}\n"
-            formatted += f"  Fuel Type: {station.get('fuel_type', 'Unknown').title()}, "
-            formatted += f"Capacity: {station.get('capacity_liters', 0):,.0f} L, "
-            formatted += f"Current: {station.get('current_level_liters', 0):,.0f} L\n"
-            if station.get("lat") and station.get("lon"):
-                formatted += f"  Coordinates: {station.get('lat', 0):.4f}, {station.get('lon', 0):.4f}\n"
+            formatted += f"- {station.name} ({station.code})\n"
+            formatted += f"  Location: {station.city}, {station.region}\n"
+            formatted += f"  Fuel Type: {station.fuel_type.title()}, "
+            formatted += f"Capacity: {station.capacity_liters:,.0f} L, "
+            formatted += f"Current: {station.current_level_liters:,.0f} L\n"
+            formatted += f"  Coordinates: {station.lat:.4f}, {station.lon:.4f}\n"
 
         return formatted
 
-    def _format_historical_data(self, routes: List[Dict]) -> str:
-        """Format delivery data as historical route information"""
-        if not routes:
+    def _format_historical_data(self, deliveries: List[DeliveryData]) -> str:
+        """Format delivery data using standardized models"""
+        if not deliveries:
             return "No recent delivery data available."
 
         formatted = "Recent Delivery History:\n"
-        for delivery in routes[:5]:  # This is actually delivery data
-            # FIXED to match your actual schema
-            formatted += f"- Station: {delivery.get('station_name', 'Unknown')} ({delivery.get('station_code', 'N/A')})\n"
-            formatted += f"  Location: {delivery.get('city', 'Unknown')}, {delivery.get('region', 'Unknown')}\n"
-            formatted += f"  Volume: {delivery.get('volume_liters', 0):,.0f} L, "
-            formatted += f"Status: {delivery.get('status', 'Unknown').title()}, "
-            formatted += f"Truck: {delivery.get('truck_code', 'Unknown')} ({delivery.get('truck_plate', 'N/A')})\n"
-            formatted += f"  Date: {delivery.get('delivery_date', 'Unknown')}\n"
+        for delivery in deliveries[:5]:
+            formatted += (
+                f"- Station: {delivery.station_name} ({delivery.station_code})\n"
+            )
+            formatted += f"  Location: {delivery.city}, {delivery.region}\n"
+            formatted += f"  Volume: {delivery.volume_liters:,.0f} L, "
+            formatted += f"Status: {delivery.status.title()}, "
+            formatted += f"Truck: {delivery.truck_code} ({delivery.truck_plate})\n"
+            formatted += f"  Date: {delivery.delivery_date}\n"
 
         return formatted
 
-    def _format_weather_data(self, weather: Dict[str, Any]) -> str:
-        """Format weather data for prompt"""
-        from_weather = weather.get("from_location", {})
-        to_weather = weather.get("to_location", {})
-
+    def _format_weather_data(self, weather: WeatherResult) -> str:
+        """Format weather data using standardized models"""
         formatted = "Current Weather Conditions:\n"
-        if from_weather:
-            formatted += f"From Location: {from_weather.get('temp_c', 'Unknown')}°C, "
-            formatted += f"{from_weather.get('condition', 'Unknown')}, "
-            formatted += f"Wind: {from_weather.get('wind_kph', 'Unknown')} km/h\n"
-
-        if to_weather:
-            formatted += f"To Location: {to_weather.get('temp_c', 'Unknown')}°C, "
-            formatted += f"{to_weather.get('condition', 'Unknown')}, "
-            formatted += f"Wind: {to_weather.get('wind_kph', 'Unknown')} km/h\n"
-
+        formatted += (
+            f"From {weather.from_location.city}: {weather.from_location.temp_c}°C, "
+        )
+        formatted += f"{weather.from_location.condition}, Wind: {weather.from_location.wind_kph} km/h\n"
+        formatted += f"To {weather.to_location.city}: {weather.to_location.temp_c}°C, "
+        formatted += f"{weather.to_location.condition}, Wind: {weather.to_location.wind_kph} km/h\n"
         return formatted

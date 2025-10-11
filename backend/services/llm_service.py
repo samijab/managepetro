@@ -7,6 +7,14 @@ from google import genai
 from google.genai import types
 from .prompt_service import PromptService
 from .api_utils import get_weather
+from models.data_models import (
+    StationData,
+    DeliveryData,
+    TruckData,
+    DatabaseResult,
+    WeatherResult,
+    WeatherData,
+)
 from typing import Dict, Any
 
 # Load environment variables
@@ -57,41 +65,35 @@ class LLMService:
     async def optimize_route(
         self, from_location: str, to_location: str, llm_model: str = "gemini-2.5-flash"
     ) -> Dict[str, Any]:
-        """Generate route optimization combining ALL data sources"""
+        """Generate route optimization using standardized data models"""
 
-        # Step 1: Get database data
+        # Get standardized data
         db_data = self._get_database_data(from_location, to_location)
-
-        # Step 2: Get weather data
         weather_data = self._get_weather_data(from_location, to_location)
 
-        # Step 3: Create comprehensive prompt
+        # Create prompt with standardized data
         comprehensive_prompt = self.prompt_service.format_comprehensive_prompt(
             from_location=from_location,
             to_location=to_location,
-            stations_data=db_data["stations"],
-            historical_routes=db_data["deliveries"],
+            stations_data=db_data.stations,
+            historical_routes=db_data.deliveries,
             weather_data=weather_data,
             vehicle_type="fuel_delivery_truck",
         )
 
-        # Step 4: Send to AI
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
-
-        # Step 5: Parse and return
         return self._parse_comprehensive_response(ai_response, db_data, weather_data)
 
     def _get_database_data(
         self, from_location: str, to_location: str
-    ) -> Dict[str, Any]:
-        """Query MySQL database matching your actual schema (docs best practices)"""
+    ) -> DatabaseResult:
+        """Query database and return standardized data models"""
         try:
             with self.get_db_connection() as conn:
-                # Use buffered cursor with dictionary results (recommended)
                 cursor = conn.cursor(dictionary=True, buffered=True)
 
                 try:
-                    # Get stations from your actual schema (FIXED - removed last_delivery and created_at)
+                    # Get stations
                     stations_query = """
                         SELECT id, code, name, lat, lon, city, region, 
                                fuel_type, capacity_liters, current_level_liters
@@ -101,9 +103,10 @@ class LLMService:
                         LIMIT %s
                     """
                     cursor.execute(stations_query, (1000, 10))
-                    stations = cursor.fetchall()
+                    stations_raw = cursor.fetchall()
+                    stations = [StationData(**row) for row in stations_raw]
 
-                    # Get delivery data as "historical routes" (FIXED - removed model reference)
+                    # Get deliveries
                     deliveries_query = """
                         SELECT d.id, d.volume_liters, d.delivery_date, d.status,
                                s.name as station_name, s.code as station_code,
@@ -126,9 +129,10 @@ class LLMService:
                         15,
                     )
                     cursor.execute(deliveries_query, location_params)
-                    deliveries = cursor.fetchall()
+                    deliveries_raw = cursor.fetchall()
+                    deliveries = [DeliveryData(**row) for row in deliveries_raw]
 
-                    # Get truck information for context (FIXED - removed model and last_maintenance)
+                    # Get trucks
                     trucks_query = """
                         SELECT id, code, plate, capacity_liters,
                                fuel_level_percent, fuel_type, status
@@ -138,16 +142,11 @@ class LLMService:
                         LIMIT %s
                     """
                     cursor.execute(trucks_query, ("active", 5))
-                    trucks = cursor.fetchall()
+                    trucks_raw = cursor.fetchall()
+                    trucks = [TruckData(**row) for row in trucks_raw]
 
-                    # Commit the transaction (even for SELECT queries, good practice)
                     conn.commit()
-
-                    return {
-                        "stations": stations,
-                        "deliveries": deliveries,
-                        "trucks": trucks,
-                    }
+                    return DatabaseResult(stations, deliveries, trucks)
 
                 except MySQLError as e:
                     conn.rollback()
@@ -158,24 +157,22 @@ class LLMService:
 
         except MySQLError as e:
             print(f"Database query failed: {e.errno} - {e.msg}")
-            return {"stations": [], "deliveries": [], "trucks": []}
+            return DatabaseResult([], [], [])
         except Exception as e:
             print(f"Unexpected database error: {e}")
-            return {"stations": [], "deliveries": [], "trucks": []}
+            return DatabaseResult([], [], [])
 
-    def _get_weather_data(self, from_location: str, to_location: str) -> Dict[str, Any]:
-        """Get weather data for both locations"""
+    def _get_weather_data(self, from_location: str, to_location: str) -> WeatherResult:
+        """Get weather data using standardized models"""
         try:
             from_weather = get_weather(from_location)
             to_weather = get_weather(to_location)
-
-            return {
-                "from_location": {"location": from_location, **from_weather},
-                "to_location": {"location": to_location, **to_weather},
-            }
+            return WeatherResult(from_weather, to_weather)
         except Exception as e:
             print(f"Weather data failed: {e}")
-            return {"from_location": {}, "to_location": {}}
+            # Return empty weather data
+            empty_weather = WeatherData("Unknown", 0, "Unknown", 0, 0)
+            return WeatherResult(empty_weather, empty_weather)
 
     async def _call_gemini(self, prompt: str, model: str) -> str:
         """Make the actual Gemini API call"""
@@ -196,32 +193,23 @@ class LLMService:
             raise e
 
     def _parse_comprehensive_response(
-        self, ai_response: str, db_data: Dict, weather_data: Dict
+        self, ai_response: str, db_data: DatabaseResult, weather_data: WeatherResult
     ) -> Dict[str, Any]:
-        """Parse AI response - Google Maps style with REAL AI-generated directions"""
+        """Parse AI response using standardized data models"""
 
-        # Extract weather info
-        from_weather = weather_data.get("from_location", {})
-        to_weather = weather_data.get("to_location", {})
-
-        # Try to parse structured data from AI response
+        # Extract parsed data
         try:
             parsed_directions = self._extract_directions_from_ai(ai_response)
             route_summary = self._extract_route_summary_from_ai(
-                ai_response, from_weather, to_weather
+                ai_response, weather_data.from_location, weather_data.to_location
             )
             traffic_info = self._extract_traffic_info_from_ai(ai_response)
-
         except Exception as e:
             print(f"Failed to parse AI response: {e}")
-            # Enhanced fallback with more realistic data
-            parsed_directions = [
-                {"step": 1, "instruction": "See AI analysis below for detailed route"}
-            ]
+            parsed_directions = [{"step": 1, "instruction": "See AI analysis below"}]
             route_summary = {
-                "from": from_weather.get("location", "Unknown"),
-                "to": to_weather.get("location", "Unknown"),
-                "note": "Route details generated by AI - see ai_analysis section",
+                "from": weather_data.from_location.city,
+                "to": weather_data.to_location.city,
                 "ai_generated": True,
             }
             traffic_info = {"note": "Traffic analysis in AI response"}
@@ -231,18 +219,16 @@ class LLMService:
                 # Core route information
                 "from": route_summary.get("from", "Unknown"),
                 "to": route_summary.get("to", "Unknown"),
-                "total_distance": route_summary.get(
-                    "total_distance", route_summary.get("distance", "AI Generated")
-                ),
+                "total_distance": route_summary.get("total_distance", "AI Generated"),
                 "estimated_duration": route_summary.get(
-                    "estimated_duration", route_summary.get("duration", "AI Generated")
+                    "estimated_duration", "AI Generated"
                 ),
                 "duration_with_traffic": route_summary.get(
                     "duration_with_traffic", "See AI analysis"
                 ),
                 # Route details
                 "primary_route": route_summary.get(
-                    "primary_route", route_summary.get("route", "AI Optimized Route")
+                    "primary_route", "AI Optimized Route"
                 ),
                 "route_type": route_summary.get("route_type", "AI Optimized"),
                 # Timing and conditions
@@ -250,8 +236,7 @@ class LLMService:
                     "best_departure_time", "See AI recommendations"
                 ),
                 "weather_impact": route_summary.get(
-                    "weather_impact",
-                    f"Current: {from_weather.get('condition', 'Unknown')}",
+                    "weather_impact", f"Current: {weather_data.from_location.condition}"
                 ),
                 # Fuel planning
                 "fuel_stops": route_summary.get(
@@ -272,87 +257,36 @@ class LLMService:
             "traffic_conditions": traffic_info,
             "weather_impact": {
                 "from_location": {
-                    "city": from_weather.get("location", "Start"),
-                    "temperature": f"{from_weather.get('temp_c', 'N/A')}°C",
-                    "condition": from_weather.get("condition", "Unknown"),
-                    "wind": f"{from_weather.get('wind_kph', 'N/A')} km/h",
+                    "city": weather_data.from_location.city,
+                    "temperature": f"{weather_data.from_location.temp_c}°C",
+                    "condition": weather_data.from_location.condition,
+                    "wind": f"{weather_data.from_location.wind_kph} km/h",
                     "visibility": "Good",
                 },
                 "to_location": {
-                    "city": to_weather.get("location", "Destination"),
-                    "temperature": f"{to_weather.get('temp_c', 'N/A')}°C",
-                    "condition": to_weather.get("condition", "Unknown"),
-                    "wind": f"{to_weather.get('wind_kph', 'N/A')} km/h",
+                    "city": weather_data.to_location.city,
+                    "temperature": f"{weather_data.to_location.temp_c}°C",
+                    "condition": weather_data.to_location.condition,
+                    "wind": f"{weather_data.to_location.wind_kph} km/h",
                     "visibility": "Good",
                 },
-                "route_impact": f"Weather conditions: {from_weather.get('condition', 'Unknown')}",
+                "route_impact": f"Weather conditions: {weather_data.from_location.condition}",
                 "driving_conditions": (
-                    "Normal" if from_weather.get("condition") != "Rain" else "Cautious"
+                    "Normal"
+                    if weather_data.from_location.condition != "Rain"
+                    else "Cautious"
                 ),
             },
+            # Use standardized to_api_dict methods
             "fuel_stations": [
-                {
-                    "name": station.get("name", "Unknown Station"),
-                    "code": station.get("code", "N/A"),
-                    "location": f"{station.get('city', 'Unknown')}, {station.get('region', 'Unknown')}",
-                    "fuel_type": station.get("fuel_type", "diesel").title(),
-                    "capacity": f"{station.get('capacity_liters', 0):,.0f} L",
-                    "current_level": f"{station.get('current_level_liters', 0):,.0f} L",
-                    "availability": (
-                        "Available"
-                        if station.get("current_level_liters", 0) > 5000
-                        else "Low Stock"
-                    ),
-                    "coordinates": {
-                        "lat": (
-                            float(station.get("lat", 0)) if station.get("lat") else None
-                        ),
-                        "lon": (
-                            float(station.get("lon", 0)) if station.get("lon") else None
-                        ),
-                    },
-                }
-                for station in db_data["stations"][:5]
+                station.to_api_dict() for station in db_data.stations[:5]
             ],
             "recent_deliveries": [
-                {
-                    "delivery_id": delivery.get("id", "Unknown"),
-                    "station": f"{delivery.get('station_name', 'Unknown')} ({delivery.get('station_code', 'N/A')})",
-                    "location": f"{delivery.get('city', 'Unknown')}, {delivery.get('region', 'Unknown')}",
-                    "volume": f"{delivery.get('volume_liters', 0):,.0f} L",
-                    "date": str(delivery.get("delivery_date", "Unknown")),
-                    "status": delivery.get("status", "unknown").title(),
-                    "truck": f"{delivery.get('truck_code', 'Unknown')} ({delivery.get('truck_plate', 'N/A')})",
-                    "coordinates": {
-                        "lat": (
-                            float(delivery.get("lat", 0))
-                            if delivery.get("lat")
-                            else None
-                        ),
-                        "lon": (
-                            float(delivery.get("lon", 0))
-                            if delivery.get("lon")
-                            else None
-                        ),
-                    },
-                }
-                for delivery in db_data["deliveries"][:5]
+                delivery.to_api_dict() for delivery in db_data.deliveries[:5]
             ],
-            "available_trucks": [
-                {
-                    "code": truck.get("code", "Unknown"),
-                    "plate": truck.get("plate", "N/A"),
-                    "fuel_capacity": f"{truck.get('capacity_liters', 0):,.0f} L",
-                    "fuel_level": f"{truck.get('fuel_level_percent', 0)}%",
-                    "fuel_type": truck.get("fuel_type", "diesel").title(),
-                    "status": truck.get("status", "unknown").title(),
-                }
-                for truck in db_data["trucks"][:3]
-            ],
+            "available_trucks": [truck.to_api_dict() for truck in db_data.trucks[:3]],
             "data_sources": {
-                "database_stations": len(db_data["stations"]),
-                "recent_deliveries": len(db_data["deliveries"]),
-                "available_trucks": len(db_data["trucks"]),
+                **db_data.to_counts_dict(),
                 "weather_data": "included" if weather_data else "unavailable",
                 "ai_analysis": "included",
             },
@@ -507,12 +441,15 @@ class LLMService:
         return directions
 
     def _extract_route_summary_from_ai(
-        self, ai_response: str, from_weather: dict, to_weather: dict
+        self,
+        ai_response: str,
+        from_weather: WeatherData,
+        to_weather: WeatherData,
     ) -> dict:
         """Extract comprehensive route summary from AI response"""
         summary = {
-            "from": from_weather.get("location", "Unknown"),
-            "to": to_weather.get("location", "Unknown"),
+            "from": from_weather.city,
+            "to": to_weather.city,
             "ai_generated": True,
         }
 

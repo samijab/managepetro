@@ -1,4 +1,3 @@
-from typing import Union
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -69,17 +68,6 @@ class ReachableRangeRequest(BaseModel):
     )
 
 
-# Existing endpoints (keep unchanged)
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
-
 @app.post("/api/routes/optimize")
 async def optimize_route_ai(request: RouteRequest):
     """AI-powered route optimization using markdown-refined prompts"""
@@ -108,7 +96,10 @@ def get_weather_info(request: WeatherRequest):
     """Get current weather information for a city"""
     try:
         weather_data = get_weather(request.city)
-        return {"city": request.city, "weather": weather_data}
+        return {
+            "city": request.city,
+            "weather": weather_data.to_dict(),
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
