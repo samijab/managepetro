@@ -75,4 +75,4 @@ CREATE TABLE IF NOT EXISTS weather_data (
   wind FLOAT,
   humidity FLOAT,
   collected_at TIMESTAMP
-)
+);
