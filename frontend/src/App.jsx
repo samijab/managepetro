@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import RoutePage from "./pages/RoutePage";
 import StationsPage from "./pages/StationsPage";
+import DemoRoutePage from "./pages/DemoRoutePage";
 
 function App() {
   const [selectedLLM, setSelectedLLM] = useState("gemini-2.5-flash");
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<RoutePage selectedLLM={selectedLLM} />} />
           <Route path="/stations" element={<StationsPage />} />
+          <Route path="/demo" element={<DemoRoutePage />} />
         </Routes>
       </div>
     </Router>
