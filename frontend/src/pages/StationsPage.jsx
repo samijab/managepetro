@@ -1,12 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import DynamicTable from "../components/DynamicTable";
-import Api from "../services/api";
+import { useStations } from "../hooks/useApiQueries";
 
 function StationsPage() {
-  const [stations, setStations] = useState([]);
+  const { data, isLoading, error } = useStations();
+  const stations = useMemo(() => {
+    if (!data?.stations) return [];
+    
+    // Transform API data to match table expectations
+    return data.stations.map((station) => ({
+      ...station,
+      id: station.station_id,
+      fuel_type: station.fuel_type 
+        ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1) 
+        : "Diesel",
+      // Calculate priority based on fuel level
+      priority: station.fuel_level < 30 ? "High" : station.fuel_level < 60 ? "Medium" : "Low",
+      last_delivery: "N/A", // Backend doesn't provide this yet
+    }));
+  }, [data]);
+
   const [filteredStations, setFilteredStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Column configuration for the stations table
   const columns = [
@@ -78,43 +92,17 @@ function StationsPage() {
     },
   ];
 
-  useEffect(() => {
-    const loadStations = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await Api.getStations();
-        
-        // Transform API data to match table expectations
-        const enhancedStations = (response.stations || []).map((station) => ({
-          ...station,
-          id: station.station_id,
-          fuel_type: station.fuel_type ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1) : "Diesel",
-          // Calculate priority based on fuel level
-          priority: station.fuel_level < 30 ? "High" : station.fuel_level < 60 ? "Medium" : "Low",
-          last_delivery: "N/A", // Backend doesn't provide this yet
-        }));
-
-        setStations(enhancedStations);
-        setFilteredStations(enhancedStations);
-      } catch (err) {
-        console.error("Failed to load stations:", err);
-        setError(err.message || "Failed to load stations");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStations();
-  }, []);
+  // Update filteredStations when stations change
+  useMemo(() => {
+    setFilteredStations(stations);
+  }, [stations]);
 
   const handleFilter = () => {
     console.log("Open filter modal");
     // TODO: Implement filter modal
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-4 py-8 max-w-7xl">
@@ -136,7 +124,7 @@ function StationsPage() {
           <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-8">
             <div className="flex items-center justify-center space-x-3">
               <span className="text-red-600 text-lg">⚠</span>
-              <span className="text-red-800">{error}</span>
+              <span className="text-red-800">{error.message || "Failed to load stations"}</span>
             </div>
           </div>
         </main>

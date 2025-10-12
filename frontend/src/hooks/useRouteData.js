@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useOptimizeRoute } from "./useApiQueries";
 import routeService from "../services/routeService";
 
 /**
- * Custom hook for managing route calculation state
+ * Custom hook for managing route calculation state using React Query
  */
 export function useRouteData() {
   const [routeData, setRouteData] = useState({
@@ -18,43 +19,24 @@ export function useRouteData() {
     availableTrucks: [],
     aiAnalysis: "",
     dataSources: null,
-    isLoading: false,
-    error: null,
   });
 
+  const optimizeRouteMutation = useOptimizeRoute();
+
   const calculateRoute = async (from, to, llmModel) => {
-    setRouteData((prev) => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
-
-    try {
-      const result = await routeService.calculateRoute(from, to, llmModel);
-
-      setRouteData({
-        from,
-        to,
-        eta: result.eta,
-        instructions: result.instructions,
-        routeSummary: result.routeSummary,
-        weatherImpact: result.weatherImpact,
-        trafficConditions: result.trafficConditions,
-        fuelStations: result.fuelStations,
-        recentDeliveries: result.recentDeliveries,
-        availableTrucks: result.availableTrucks,
-        aiAnalysis: result.aiAnalysis,
-        dataSources: result.dataSources,
-        isLoading: false,
-        error: null,
-      });
-    } catch (error) {
-      setRouteData((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: error.message,
-      }));
-    }
+    optimizeRouteMutation.mutate(
+      { from, to, llmModel },
+      {
+        onSuccess: (result) => {
+          const transformedData = routeService.transformApiResponse(result);
+          setRouteData({
+            from,
+            to,
+            ...transformedData,
+          });
+        },
+      }
+    );
   };
 
   const clearRoute = () => {
@@ -71,16 +53,15 @@ export function useRouteData() {
       availableTrucks: [],
       aiAnalysis: "",
       dataSources: null,
-      isLoading: false,
-      error: null,
     });
+    optimizeRouteMutation.reset();
   };
 
   return {
     routeData,
     calculateRoute,
     clearRoute,
-    isLoading: routeData.isLoading,
-    error: routeData.error,
+    isLoading: optimizeRouteMutation.isPending,
+    error: optimizeRouteMutation.error?.message,
   };
 }
