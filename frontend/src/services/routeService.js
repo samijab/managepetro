@@ -24,6 +24,12 @@ class RouteService {
     // Handle the nested route_summary structure from backend
     const routeSummary = apiData.route_summary || {};
     const directions = apiData.directions || [];
+    const weatherImpact = apiData.weather_impact || {};
+    const trafficConditions = apiData.traffic_conditions || {};
+    const fuelStations = apiData.fuel_stations || [];
+    const recentDeliveries = apiData.recent_deliveries || [];
+    const availableTrucks = apiData.available_trucks || [];
+    const aiAnalysis = apiData.ai_analysis || "";
 
     return {
       eta: {
@@ -38,6 +44,28 @@ class RouteService {
         direction_type: step.direction_type || this.extractDirectionType(step.instruction || ""),
         compass_direction: step.compass_direction || step.bearing || null,
       })),
+      routeSummary: {
+        from: routeSummary.from || "N/A",
+        to: routeSummary.to || "N/A",
+        primaryRoute: routeSummary.primary_route || "N/A",
+        routeType: routeSummary.route_type || "N/A",
+        bestDepartureTime: routeSummary.best_departure_time || "N/A",
+        weatherImpact: routeSummary.weather_impact || "N/A",
+        fuelStops: routeSummary.fuel_stops || "N/A",
+        estimatedFuelCost: routeSummary.estimated_fuel_cost || "N/A",
+        optimizationFactors: routeSummary.optimization_factors || [],
+      },
+      weatherImpact: {
+        fromLocation: weatherImpact.from_location || {},
+        toLocation: weatherImpact.to_location || {},
+        routeImpact: weatherImpact.route_impact || "N/A",
+        drivingConditions: weatherImpact.driving_conditions || "N/A",
+      },
+      trafficConditions: trafficConditions,
+      fuelStations: fuelStations,
+      recentDeliveries: recentDeliveries,
+      availableTrucks: availableTrucks,
+      aiAnalysis: aiAnalysis,
     };
   }
 

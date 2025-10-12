@@ -87,7 +87,7 @@ function StationsPage() {
         const response = await Api.getStations();
         
         // Transform API data to match table expectations
-        const enhancedStations = (response.stations || []).map((station, index) => ({
+        const enhancedStations = (response.stations || []).map((station) => ({
           ...station,
           id: station.station_id,
           fuel_type: station.fuel_type ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1) : "Diesel",
