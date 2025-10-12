@@ -1,7 +1,10 @@
 import { MapPinIcon } from "@heroicons/react/24/outline";
 
 function FuelStationsCard({ fuelStations }) {
-  if (!fuelStations || fuelStations.length === 0) {
+  // Filter stations to only show those with valid location data (city or region)
+  const validStations = fuelStations?.filter(station => station.city || station.region) || [];
+  
+  if (validStations.length === 0) {
     return null;
   }
 
@@ -12,12 +15,12 @@ function FuelStationsCard({ fuelStations }) {
           Nearby Fuel Stations
         </h3>
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {fuelStations.length} stations
+          {validStations.length} stations
         </span>
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto">
-        {fuelStations.map((station, index) => (
+        {validStations.map((station, index) => (
           <div
             key={station.station_id || index}
             className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
@@ -35,7 +38,7 @@ function FuelStationsCard({ fuelStations }) {
                   <p className="text-xs text-gray-500 mt-0.5">
                     {station.city && station.region
                       ? `${station.city}, ${station.region}`
-                      : station.city || station.region || "Location N/A"}
+                      : station.city || station.region}
                   </p>
                 </div>
                 {station.fuel_level !== undefined && (

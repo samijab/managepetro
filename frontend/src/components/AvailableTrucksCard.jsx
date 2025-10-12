@@ -1,7 +1,10 @@
 import { TruckIcon } from "@heroicons/react/24/outline";
 
 function AvailableTrucksCard({ trucks }) {
-  if (!trucks || trucks.length === 0) {
+  // Filter trucks to only show those with valid plate_number or truck_id
+  const validTrucks = trucks?.filter(truck => truck.plate_number || truck.truck_id) || [];
+  
+  if (validTrucks.length === 0) {
     return null;
   }
 
@@ -12,12 +15,12 @@ function AvailableTrucksCard({ trucks }) {
           Available Trucks
         </h3>
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          {trucks.length} available
+          {validTrucks.length} available
         </span>
       </div>
 
       <div className="space-y-3">
-        {trucks.map((truck, index) => (
+        {validTrucks.map((truck, index) => (
           <div
             key={truck.truck_id || index}
             className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
@@ -30,11 +33,13 @@ function AvailableTrucksCard({ trucks }) {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">
-                    {truck.plate_number || truck.truck_id || "Unknown Truck"}
+                    {truck.plate_number || truck.truck_id}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {truck.code || "No code"}
-                  </p>
+                  {truck.code && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {truck.code}
+                    </p>
+                  )}
                 </div>
                 {truck.status && (
                   <span
