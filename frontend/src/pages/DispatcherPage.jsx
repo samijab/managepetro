@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import Api from "../services/api";
+import { useState, useMemo } from "react";
+import { useTrucks, useStations, useOptimizeDispatch } from "../hooks/useApiQueries";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import TruckDispatchCard from "../components/TruckDispatchCard";
@@ -8,64 +8,47 @@ import DispatchResultCard from "../components/DispatchResultCard";
 import { TruckIcon } from "@heroicons/react/24/outline";
 
 function DispatcherPage() {
-  const [trucks, setTrucks] = useState([]);
-  const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [dispatchResult, setDispatchResult] = useState(null);
-  const [optimizing, setOptimizing] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Fetch data using React Query
+  const { data: trucksData, isLoading: trucksLoading, error: trucksError } = useTrucks();
+  const { data: stationsData, isLoading: stationsLoading, error: stationsError } = useStations();
+  const optimizeDispatchMutation = useOptimizeDispatch();
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const [trucksResponse, stationsResponse] = await Promise.all([
-        Api.getTrucks(),
-        Api.getStations(),
-      ]);
+  const trucks = trucksData?.trucks || [];
+  const stations = useMemo(() => {
+    if (!stationsData?.stations) return [];
+    // Filter stations that need refuelling
+    return stationsData.stations.filter(
+      (station) => station.needs_refuel || station.fuel_level < 30
+    );
+  }, [stationsData]);
 
-      setTrucks(trucksResponse.trucks || []);
-      
-      // Filter stations that need refuelling
-      const stationsNeedingFuel = (stationsResponse.stations || []).filter(
-        (station) => station.needs_refuel || station.fuel_level < 30
-      );
-      setStations(stationsNeedingFuel);
-    } catch (err) {
-      setError(err.message || "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isLoading = trucksLoading || stationsLoading;
+  const error = trucksError || stationsError;
 
   const handleOptimizeDispatch = async (truck) => {
-    try {
-      setOptimizing(true);
-      setError(null);
-      setSelectedTruck(truck);
-      
-      const result = await Api.post("/dispatch/optimize", {
+    setSelectedTruck(truck);
+    
+    optimizeDispatchMutation.mutate(
+      {
         truck_id: truck.truck_id,
         depot_location: "Toronto",
         llm_model: "gemini-2.5-flash",
-      });
-
-      setDispatchResult(result);
-    } catch (err) {
-      setError(err.message || "Failed to optimize dispatch");
-      setDispatchResult(null);
-    } finally {
-      setOptimizing(false);
-    }
+      },
+      {
+        onSuccess: (result) => {
+          setDispatchResult(result);
+        },
+        onError: () => {
+          setDispatchResult(null);
+        },
+      }
+    );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <LoadingSpinner message="Loading dispatcher data..." />
@@ -90,7 +73,7 @@ function DispatcherPage() {
 
       {error && (
         <div className="mb-6">
-          <ErrorMessage message={error} />
+          <ErrorMessage message={error.message || "Failed to load data"} />
         </div>
       )}
 
@@ -128,8 +111,8 @@ function DispatcherPage() {
                 key={truck.truck_id}
                 truck={truck}
                 onOptimize={handleOptimizeDispatch}
-                isOptimizing={optimizing && selectedTruck?.truck_id === truck.truck_id}
-                disabled={optimizing}
+                isOptimizing={optimizeDispatchMutation.isPending && selectedTruck?.truck_id === truck.truck_id}
+                disabled={optimizeDispatchMutation.isPending}
               />
             ))}
           </div>
