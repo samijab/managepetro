@@ -764,98 +764,13 @@ class LLMService:
         depot_location: str,
         depot_weather: WeatherData,
     ) -> str:
-        """Create a prompt for dispatch optimization"""
-        
-        # Format truck compartments
-        compartments_info = ""
-        if truck.compartments:
-            compartments_info = "\n".join([
-                f"  - Compartment {c['compartment_number']}: {c['fuel_type']} - "
-                f"{c['capacity_liters']} L capacity ({c['current_level_liters']} L current)"
-                for c in truck.compartments
-            ])
-        else:
-            compartments_info = f"  - Single compartment: {truck.fuel_type} - {truck.capacity_liters} L"
-
-        # Format stations needing fuel
-        stations_info = ""
-        for i, station in enumerate(stations, 1):
-            fuel_percent = int((station.current_level_liters / station.capacity_liters) * 100)
-            needed = station.capacity_liters - station.current_level_liters
-            stations_info += f"""
-{i}. {station.name} ({station.code})
-   - Location: {station.city}, {station.region}
-   - Coordinates: {station.lat}, {station.lon}
-   - Fuel Type: {station.fuel_type}
-   - Current Level: {station.current_level_liters} L ({fuel_percent}%)
-   - Capacity: {station.capacity_liters} L
-   - Needed: {needed} L
-   - Request Method: {station.request_method}
-"""
-
-        prompt = f"""
-# DISPATCH OPTIMIZATION REQUEST
-
-## Truck Information
-Truck: {truck.code} ({truck.plate})
-Status: {truck.status}
-Current Fuel Level: {truck.fuel_level_percent}%
-
-### Compartments:
-{compartments_info}
-
-## Depot Location
-Starting Point: {depot_location}
-Weather: {depot_weather.condition}, {depot_weather.temp_c}°C, Wind: {depot_weather.wind_kph} km/h
-
-## Stations Requiring Fuel Delivery
-{stations_info}
-
-## Optimization Requirements
-1. **Route Planning**: Create an optimized route from {depot_location} to deliver fuel to stations
-2. **Fuel Type Matching**: Only deliver to stations that match the truck's compartment fuel types
-3. **Capacity Planning**: Ensure truck has enough fuel in appropriate compartments for deliveries
-4. **Complete Expenditure**: All fuel in truck compartments should be delivered by end of day
-5. **Priority**: Stations with lower fuel levels should be prioritized
-6. **Request Method**: Consider that IoT stations auto-requested while Manual stations were requested by staff
-7. **Route Efficiency**: Minimize total distance while serving maximum stations
-8. **Weather Impact**: Account for current weather conditions in timing and safety
-
-## Expected Output Format
-
-### DISPATCH SUMMARY
-- Total Stations to Visit: [number]
-- Total Distance: [distance] km
-- Estimated Duration: [time]
-- Total Fuel to Deliver: [volume] L
-- Departure Time: [recommended time]
-- Return to Depot: [estimated time]
-
-### OPTIMIZED ROUTE
-1. [Station name] - [City]
-   - Distance from previous: [km]
-   - Fuel to deliver: [volume] L ([fuel type])
-   - Compartment: [number]
-   - ETA: [time]
-   - Reason: [why this station/priority]
-
-[Continue for all stations...]
-
-### COMPARTMENT ALLOCATION
-- Compartment 1 ([fuel type]): [allocated volume] L to [station names]
-- Compartment 2 ([fuel type]): [allocated volume] L to [station names]
-[etc...]
-
-### OPTIMIZATION RATIONALE
-[Explain the logic behind the route selection, prioritization, and fuel allocation]
-
-### WEATHER & SAFETY CONSIDERATIONS
-[Any weather-related recommendations]
-
-### RECOMMENDATIONS
-[Any additional recommendations for the dispatcher]
-"""
-        return prompt
+        """Create a prompt for dispatch optimization using prompt service"""
+        return self.prompt_service.format_dispatch_prompt(
+            truck=truck,
+            stations=stations,
+            depot_location=depot_location,
+            depot_weather=depot_weather,
+        )
 
     def _parse_dispatch_response(
         self,
