@@ -1,7 +1,8 @@
 import { XMarkIcon, TruckIcon, MapIcon } from "@heroicons/react/24/outline";
+import { formatMarkdownForDisplay } from "../utils/textFormatting";
 
 function DispatchResultCard({ result, onClose }) {
-  const { dispatch_summary, truck, route_stops, ai_analysis } = result;
+  const { dispatch_summary, truck, route_stops, ai_analysis, stations_available } = result;
 
   return (
     <div className="bg-white rounded-lg shadow-lg border-2 border-blue-500">
@@ -178,6 +179,36 @@ function DispatchResultCard({ result, onClose }) {
           </div>
         )}
 
+        {/* Stations Available (for reference) */}
+        {stations_available && stations_available.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Stations Considered ({stations_available.length})
+            </h3>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700 mb-2">
+                All stations needing fuel that were considered for this dispatch:
+              </p>
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {stations_available.map((station) => (
+                  <div
+                    key={station.station_id}
+                    className="bg-white p-2 rounded text-xs border border-gray-200"
+                  >
+                    <div className="font-medium text-gray-900">
+                      {station.name} - {station.city}
+                    </div>
+                    <div className="text-gray-600 mt-1">
+                      {station.fuel_type} • {station.fuel_level_percent}% full • 
+                      {station.request_method === "IoT" ? " Auto-Request" : " Manual"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI Analysis */}
         {ai_analysis && (
           <div>
@@ -186,7 +217,7 @@ function DispatchResultCard({ result, onClose }) {
             </h3>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
-                {ai_analysis}
+                {formatMarkdownForDisplay(ai_analysis)}
               </pre>
             </div>
           </div>

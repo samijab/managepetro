@@ -1,5 +1,6 @@
 import { SparklesIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { formatMarkdownForDisplay } from "../utils/textFormatting";
 
 function AIAnalysisCard({ aiAnalysis, routeSummary }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -121,7 +122,7 @@ function AIAnalysisCard({ aiAnalysis, routeSummary }) {
           {isExpanded && (
             <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
               <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
-                {aiAnalysis}
+                {formatMarkdownForDisplay(aiAnalysis)}
               </pre>
             </div>
           )}
