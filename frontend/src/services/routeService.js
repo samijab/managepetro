@@ -70,7 +70,7 @@ class RouteService {
    * @param {string} llmModel - Selected LLM model
    * @returns {Promise<{eta: Object, instructions: Array}>}
    */
-  async calculateRoute(from, to, llmModel = "gpt-4") {
+  async calculateRoute(from, to, llmModel = "gemini-2.5-flash") {
     if (USE_MOCK_DATA) {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -84,14 +84,13 @@ class RouteService {
       };
     }
 
-    // Real API call
+    // Real API call using the Api service
     try {
-      const response = await Api.post("/routes/optimize", {
-        from,
-        to,
+      const response = await Api.optimizeRoute({
+        from_location: from,
+        to_location: to,
         llm_model: llmModel,
-        optimization_type: "fuel_efficient",
-        include_direction_types: true, // Request direction types from API
+        use_ai_optimization: true,
       });
 
       return this.transformApiResponse(response);
@@ -111,7 +110,8 @@ class RouteService {
       return mockTrucks;
     }
 
-    return Api.getTrucks();
+    const response = await Api.getTrucks();
+    return response.trucks || response;
   }
 
   /**
@@ -124,7 +124,8 @@ class RouteService {
       return mockStations;
     }
 
-    return Api.getStations();
+    const response = await Api.getStations();
+    return response.stations || response;
   }
 }
 

@@ -183,6 +183,34 @@ const Api = {
    * @returns {Promise<{ trip: Trip }>}
    */
   getTrip: (id) => Api.get(`/trips/${id}`),
+
+  /**
+   * Get weather information for a city.
+   * @param {string} city - City name
+   * @returns {Promise<{ city: string, weather: { temp_c: number, condition: string, wind_kph: number } }>}
+   */
+  getWeather: (city) => Api.post("/weather", { city }),
+
+  /**
+   * Calculate route using TomTom API.
+   * @param {{ origin_lat: number, origin_lon: number, dest_lat: number, dest_lon: number, travel_mode?: string, route_type?: string }} params
+   * @returns {Promise<{ origin: [number, number], destination: [number, number], route_data: any }>}
+   */
+  calculateTomTomRoute: (params) => Api.post("/routes/tomtom", params),
+
+  /**
+   * Calculate reachable range using TomTom API.
+   * @param {{ origin_lat: number, origin_lon: number, budget_value: number, budget_type?: string }} params
+   * @returns {Promise<{ origin: [number, number], budget_type: string, budget_value: number, range_data: any }>}
+   */
+  calculateReachableRange: (params) => Api.post("/routes/reachable-range", params),
+
+  /**
+   * Optimize route with AI.
+   * @param {{ from_location: string, to_location: string, llm_model?: string, use_ai_optimization?: boolean }} params
+   * @returns {Promise<any>}
+   */
+  optimizeRoute: (params) => Api.post("/routes/optimize", params),
 };
 
 export default Api;
