@@ -88,15 +88,24 @@ class StationData:
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
+        fuel_level = int((self.current_level_liters / self.capacity_liters) * 100) if self.capacity_liters > 0 else 0
         return {
+            "station_id": f"station-{self.id:03d}",
             "name": self.name,
             "code": self.code,
+            "city": self.city,
+            "region": self.region,
             "location": f"{self.city}, {self.region}",
             "fuel_type": self.fuel_type.title(),
+            "fuel_level": fuel_level,
+            "capacity_liters": self.capacity_liters,
+            "current_level_liters": self.current_level_liters,
             "capacity": f"{self.capacity_liters:,.0f} L",
             "current_level": f"{self.current_level_liters:,.0f} L",
             "availability": self.availability,
             "coordinates": self.coordinates,
+            "lat": self.lat,
+            "lon": self.lon,
             "request_method": self.request_method,
             "needs_refuel": self.needs_refuel,
         }
@@ -122,12 +131,20 @@ class DeliveryData:
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
         return {
-            "delivery_id": self.id,
+            "delivery_id": f"delivery-{self.id:03d}",
+            "station_name": self.station_name,
+            "station_code": self.station_code,
             "station": f"{self.station_name} ({self.station_code})",
+            "city": self.city,
+            "region": self.region,
             "location": f"{self.city}, {self.region}",
+            "volume_liters": self.volume_liters,
             "volume": f"{self.volume_liters:,.0f} L",
             "date": str(self.delivery_date),
+            "delivery_date": str(self.delivery_date),
             "status": self.status.title(),
+            "truck_code": self.truck_code,
+            "truck_plate": self.truck_plate,
             "truck": f"{self.truck_code} ({self.truck_plate})",
             "coordinates": {"lat": self.lat, "lon": self.lon},
         }
@@ -149,12 +166,16 @@ class TruckData:
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
         return {
+            "truck_id": f"truck-{self.id:03d}",
             "code": self.code,
+            "plate_number": self.plate,
             "plate": self.plate,
+            "capacity_liters": self.capacity_liters,
             "fuel_capacity": f"{self.capacity_liters:,.0f} L",
+            "fuel_level_percent": self.fuel_level_percent,
             "fuel_level": f"{self.fuel_level_percent}%",
             "fuel_type": self.fuel_type.title(),
-            "status": self.status.title(),
+            "status": self.status.lower(),
             "compartments": self.compartments or [],
         }
 
