@@ -1,37 +1,43 @@
 import Api from "./api";
-import { mockRouteData } from "../data/mockData";
-
-const USE_MOCK_DATA =
-  import.meta.env.VITE_USE_MOCK_DATA === "true" || import.meta.env.DEV;
 
 /**
  * Service for route optimization operations
  */
 class RouteService {
   /**
+   * Generic error handler
+   * @param {Error} error - The error to handle
+   * @param {string} defaultMessage - Default error message
+   * @returns {Error} Formatted error
+   */
+  handleError(error, defaultMessage) {
+    console.error(defaultMessage, error);
+    return new Error(error.message || defaultMessage);
+  }
+
+  /**
    * Transform API response to standardized format
    * @param {Object} apiData - Raw API response
    * @returns {Object} Standardized route data
    */
   transformApiResponse(apiData) {
+    // Handle the nested route_summary structure from backend
+    const routeSummary = apiData.route_summary || {};
+    const directions = apiData.directions || [];
+
     return {
       eta: {
-        arrival: apiData.estimated_arrival || apiData.eta?.arrival,
-        duration: apiData.travel_duration || apiData.eta?.duration,
-        distance: apiData.total_distance || apiData.eta?.distance,
+        arrival: routeSummary.estimated_duration || "N/A",
+        duration: routeSummary.estimated_duration || "N/A",
+        distance: routeSummary.total_distance || "N/A",
       },
-      instructions: (apiData.steps || apiData.instructions || []).map(
-        (step, index) => ({
-          id: step.step_id || step.id || index + 1,
-          text: step.instruction || step.text,
-          distance: step.distance,
-          direction_type:
-            step.direction_type ||
-            step.maneuver ||
-            this.extractDirectionType(step.instruction),
-          compass_direction: step.compass_direction || step.bearing,
-        })
-      ),
+      instructions: directions.map((step, index) => ({
+        id: step.step_id || step.step || index + 1,
+        text: step.instruction || step.text || "Continue on route",
+        distance: step.distance || "N/A",
+        direction_type: step.direction_type || this.extractDirectionType(step.instruction || ""),
+        compass_direction: step.compass_direction || step.bearing || null,
+      })),
     };
   }
 
@@ -70,34 +76,18 @@ class RouteService {
    * @param {string} llmModel - Selected LLM model
    * @returns {Promise<{eta: Object, instructions: Array}>}
    */
-  async calculateRoute(from, to, llmModel = "gpt-4") {
-    if (USE_MOCK_DATA) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      return {
-        ...mockRouteData,
-        from,
-        to,
-        llmModel,
-        calculatedAt: new Date().toISOString(),
-      };
-    }
-
-    // Real API call
+  async calculateRoute(from, to, llmModel = "gemini-2.5-flash") {
     try {
       const response = await Api.post("/routes/optimize", {
-        from,
-        to,
+        from_location: from,
+        to_location: to,
         llm_model: llmModel,
-        optimization_type: "fuel_efficient",
-        include_direction_types: true, // Request direction types from API
+        use_ai_optimization: true,
       });
 
       return this.transformApiResponse(response);
     } catch (error) {
-      console.error("Route calculation failed:", error);
-      throw new Error("Failed to calculate route. Please try again.");
+      throw this.handleError(error, "Failed to calculate route. Please try again.");
     }
   }
 
@@ -106,12 +96,12 @@ class RouteService {
    * @returns {Promise<Array>}
    */
   async getAvailableTrucks() {
-    if (USE_MOCK_DATA) {
-      const { mockTrucks } = await import("../data/mockData");
-      return mockTrucks;
+    try {
+      const response = await Api.getTrucks();
+      return response.trucks || [];
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch available trucks");
     }
-
-    return Api.getTrucks();
   }
 
   /**
@@ -119,12 +109,12 @@ class RouteService {
    * @returns {Promise<Array>}
    */
   async getStationsNeedingFuel() {
-    if (USE_MOCK_DATA) {
-      const { mockStations } = await import("../data/mockData");
-      return mockStations;
+    try {
+      const response = await Api.getStations();
+      return response.stations || [];
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch stations");
     }
-
-    return Api.getStations();
   }
 }
 

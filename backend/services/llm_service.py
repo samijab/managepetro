@@ -174,6 +174,60 @@ class LLMService:
             empty_weather = WeatherData("Unknown", 0, "Unknown", 0, 0)
             return WeatherResult(empty_weather, empty_weather)
 
+    def get_all_stations(self):
+        """Get all stations from database for API endpoints"""
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor(dictionary=True, buffered=True)
+                try:
+                    stations_query = """
+                        SELECT id, code, name, lat, lon, city, region, 
+                               fuel_type, capacity_liters, current_level_liters
+                        FROM stations 
+                        ORDER BY name
+                    """
+                    cursor.execute(stations_query)
+                    stations_raw = cursor.fetchall()
+                    stations = [StationData(**row) for row in stations_raw]
+                    conn.commit()
+                    return stations
+                except MySQLError as e:
+                    conn.rollback()
+                    print(f"Query execution failed: {e.errno} - {e.msg}")
+                    raise
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Failed to get stations: {e}")
+            return []
+
+    def get_all_trucks(self):
+        """Get all trucks from database for API endpoints"""
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor(dictionary=True, buffered=True)
+                try:
+                    trucks_query = """
+                        SELECT id, code, plate, capacity_liters,
+                               fuel_level_percent, fuel_type, status
+                        FROM trucks
+                        ORDER BY code
+                    """
+                    cursor.execute(trucks_query)
+                    trucks_raw = cursor.fetchall()
+                    trucks = [TruckData(**row) for row in trucks_raw]
+                    conn.commit()
+                    return trucks
+                except MySQLError as e:
+                    conn.rollback()
+                    print(f"Query execution failed: {e.errno} - {e.msg}")
+                    raise
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Failed to get trucks: {e}")
+            return []
+
     async def _call_gemini(self, prompt: str, model: str) -> str:
         """Make the actual Gemini API call"""
         try:
