@@ -1,5 +1,4 @@
 import { MapPinIcon, SignalIcon } from "@heroicons/react/24/outline";
-import PropTypes from "prop-types";
 
 function StationNeedsCard({ station }) {
   const fuelLevelColor = (level) => {
@@ -100,19 +99,5 @@ function StationNeedsCard({ station }) {
     </div>
   );
 }
-
-StationNeedsCard.propTypes = {
-  station: PropTypes.shape({
-    station_id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    city: PropTypes.string.isRequired,
-    region: PropTypes.string.isRequired,
-    fuel_type: PropTypes.string.isRequired,
-    capacity_liters: PropTypes.number.isRequired,
-    current_level_liters: PropTypes.number.isRequired,
-    fuel_level: PropTypes.number,
-    request_method: PropTypes.string,
-  }).isRequired,
-};
 
 export default StationNeedsCard;

@@ -1,5 +1,4 @@
 import { TruckIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
-import PropTypes from "prop-types";
 
 function TruckDispatchCard({ truck, onOptimize, isOptimizing, disabled }) {
   const statusColor = {
@@ -151,28 +150,5 @@ function TruckDispatchCard({ truck, onOptimize, isOptimizing, disabled }) {
     </div>
   );
 }
-
-TruckDispatchCard.propTypes = {
-  truck: PropTypes.shape({
-    truck_id: PropTypes.string.isRequired,
-    code: PropTypes.string.isRequired,
-    plate_number: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
-    fuel_level_percent: PropTypes.number.isRequired,
-    capacity_liters: PropTypes.number.isRequired,
-    fuel_type: PropTypes.string.isRequired,
-    compartments: PropTypes.arrayOf(
-      PropTypes.shape({
-        compartment_number: PropTypes.number.isRequired,
-        fuel_type: PropTypes.string.isRequired,
-        capacity_liters: PropTypes.number.isRequired,
-        current_level_liters: PropTypes.number.isRequired,
-      })
-    ),
-  }).isRequired,
-  onOptimize: PropTypes.func.isRequired,
-  isOptimizing: PropTypes.bool,
-  disabled: PropTypes.bool,
-};
 
 export default TruckDispatchCard;
