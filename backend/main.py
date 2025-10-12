@@ -158,7 +158,7 @@ def calculate_range(request: ReachableRangeRequest):
 def get_stations():
     """Get all stations from database"""
     try:
-        stations = llm_service._get_database_data("", "").stations
+        stations = llm_service.get_all_stations()
         return {
             "stations": [
                 {
@@ -188,7 +188,7 @@ def get_stations():
 def get_trucks():
     """Get all trucks from database"""
     try:
-        trucks = llm_service._get_database_data("", "").trucks
+        trucks = llm_service.get_all_trucks()
         return {
             "trucks": [
                 {

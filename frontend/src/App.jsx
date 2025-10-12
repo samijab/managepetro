@@ -5,7 +5,7 @@ import RoutePage from "./pages/RoutePage";
 import StationsPage from "./pages/StationsPage";
 
 function App() {
-  const [selectedLLM, setSelectedLLM] = useState("gpt-4");
+  const [selectedLLM, setSelectedLLM] = useState("gemini-2.5-flash");
 
   return (
     <Router>
