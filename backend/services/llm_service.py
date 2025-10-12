@@ -90,9 +90,12 @@ class LLMService:
             line = line.strip()
             for search_key, result_key in mappings.items():
                 if search_key in line:
-                    value = line.split(":")[-1].strip()
-                    if value:  # Only add if not empty
-                        result[result_key] = value
+                    # Split only once after the search key to preserve time values (e.g., "6:00 AM")
+                    parts = line.split(search_key, 1)
+                    if len(parts) > 1:
+                        value = parts[1].strip()
+                        if value:  # Only add if not empty
+                            result[result_key] = value
                     break  # Move to next line after finding a match
         
         return result
