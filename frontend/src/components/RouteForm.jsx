@@ -3,6 +3,8 @@ import {
   MagnifyingGlassIcon,
   ArrowRightIcon,
   ClockIcon,
+  CalendarIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 
 function RouteForm({ onSubmit, isLoading = false }) {
@@ -11,6 +13,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
   const [timeMode, setTimeMode] = useState("departure");
   const [departureTime, setDepartureTime] = useState("");
   const [arrivalTime, setArrivalTime] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [vehicleType, setVehicleType] = useState("fuel_delivery_truck");
+  const [notes, setNotes] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,6 +24,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
         timeMode,
         departureTime: timeMode === "departure" ? departureTime : null,
         arrivalTime: timeMode === "arrival" ? arrivalTime : null,
+        deliveryDate: deliveryDate || null,
+        vehicleType,
+        notes: notes.trim() || null,
       };
       onSubmit(from.trim(), to.trim(), timeData);
     }
@@ -134,6 +142,79 @@ function RouteForm({ onSubmit, isLoading = false }) {
               ? "AI will calculate when you'll arrive"
               : "AI will calculate when you should leave"}
           </p>
+        </div>
+
+        {/* Additional Options */}
+        <div className="space-y-3 border-t pt-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Additional Options
+          </label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Delivery Date */}
+            <div className="space-y-2">
+              <label
+                htmlFor="deliveryDate"
+                className="block text-xs font-medium text-gray-600"
+              >
+                Preferred Delivery Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  id="deliveryDate"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+                <CalendarIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Vehicle Type */}
+            <div className="space-y-2">
+              <label
+                htmlFor="vehicleType"
+                className="block text-xs font-medium text-gray-600"
+              >
+                Vehicle Type
+              </label>
+              <div className="relative">
+                <select
+                  id="vehicleType"
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none"
+                >
+                  <option value="fuel_delivery_truck">Fuel Delivery Truck</option>
+                  <option value="tanker_truck">Tanker Truck</option>
+                  <option value="cargo_truck">Cargo Truck</option>
+                </select>
+                <TruckIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <label
+              htmlFor="notes"
+              className="block text-xs font-medium text-gray-600"
+            >
+              Delivery Notes (Optional)
+            </label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={isLoading}
+              rows="2"
+              placeholder="Add any special instructions or requirements..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
+            />
+          </div>
         </div>
 
         {/* Submit Button */}

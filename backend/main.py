@@ -41,6 +41,15 @@ class RouteRequest(BaseModel):
     time_mode: str = Field(
         default="departure", pattern="^(departure|arrival)$", description="Time optimization mode"
     )
+    delivery_date: str | None = Field(
+        default=None, description="Preferred delivery date (YYYY-MM-DD)"
+    )
+    vehicle_type: str = Field(
+        default="fuel_delivery_truck", description="Type of vehicle for the route"
+    )
+    notes: str | None = Field(
+        default=None, description="Additional notes or special instructions"
+    )
 
 
 class WeatherRequest(BaseModel):
@@ -99,6 +108,9 @@ async def optimize_route_ai(request: RouteRequest):
                 departure_time=request.departure_time,
                 arrival_time=request.arrival_time,
                 time_mode=request.time_mode,
+                delivery_date=request.delivery_date,
+                vehicle_type=request.vehicle_type,
+                notes=request.notes,
             )
             return result
         else:

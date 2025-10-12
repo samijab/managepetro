@@ -5,11 +5,14 @@ import ErrorMessage from "../components/ErrorMessage";
 import TruckDispatchCard from "../components/TruckDispatchCard";
 import StationNeedsCard from "../components/StationNeedsCard";
 import DispatchResultCard from "../components/DispatchResultCard";
-import { TruckIcon } from "@heroicons/react/24/outline";
+import { TruckIcon, MapPinIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 function DispatcherPage() {
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [dispatchResult, setDispatchResult] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [depotLocation, setDepotLocation] = useState("Toronto");
+  const [llmModel, setLlmModel] = useState("gemini-2.5-flash");
 
   // Fetch data using React Query
   const { data: trucksData, isLoading: trucksLoading, error: trucksError } = useTrucks();
@@ -34,8 +37,8 @@ function DispatcherPage() {
     optimizeDispatchMutation.mutate(
       {
         truck_id: truck.truck_id,
-        depot_location: "Toronto",
-        llm_model: "gemini-2.5-flash",
+        depot_location: depotLocation,
+        llm_model: llmModel,
       },
       {
         onSuccess: (result) => {
@@ -60,15 +63,72 @@ function DispatcherPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-2">
-          <TruckIcon className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">
-            Dispatcher Dashboard
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <TruckIcon className="w-8 h-8 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-900">
+                Dispatcher Dashboard
+              </h1>
+            </div>
+            <p className="text-gray-600">
+              Optimize truck dispatches to stations requiring fuel delivery
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Settings</span>
+          </button>
         </div>
-        <p className="text-gray-600">
-          Optimize truck dispatches to stations requiring fuel delivery
-        </p>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Dispatch Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="depotLocation"
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  Depot Location
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="depotLocation"
+                    value={depotLocation}
+                    onChange={(e) => setDepotLocation(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter depot location"
+                  />
+                  <MapPinIcon className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="llmModel"
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  AI Model
+                </label>
+                <select
+                  id="llmModel"
+                  value={llmModel}
+                  onChange={(e) => setLlmModel(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast)</option>
+                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {error && (

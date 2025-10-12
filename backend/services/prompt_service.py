@@ -45,6 +45,16 @@ class PromptService:
         departure_time = kwargs.get("departure_time", "Not specified")
         arrival_time = kwargs.get("arrival_time", "Not specified")
         time_mode = kwargs.get("time_mode", "departure")
+        delivery_date = kwargs.get("delivery_date", "Not specified")
+        vehicle_type = kwargs.get("vehicle_type", "fuel_delivery_truck")
+        notes = kwargs.get("notes", "No additional notes")
+
+        # Format additional context
+        additional_context = ""
+        if delivery_date and delivery_date != "Not specified":
+            additional_context += f"\n- Preferred Delivery Date: {delivery_date}"
+        if notes and notes != "No additional notes":
+            additional_context += f"\n- Special Instructions: {notes}"
 
         variables = {
             "from_location": from_location,
@@ -56,6 +66,8 @@ class PromptService:
             "departure_time": departure_time,
             "arrival_time": arrival_time,
             "time_mode": time_mode,
+            "vehicle_type": vehicle_type,
+            "additional_context": additional_context if additional_context else "None",
             **kwargs,
         }
 
