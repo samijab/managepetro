@@ -67,6 +67,8 @@ class StationData:
     fuel_type: str
     capacity_liters: int
     current_level_liters: int
+    request_method: Optional[str] = "Manual"
+    low_fuel_threshold: Optional[int] = 5000
 
     @property
     def availability(self) -> str:
@@ -77,6 +79,12 @@ class StationData:
     def coordinates(self) -> Dict[str, float]:
         """Get coordinates as dict"""
         return {"lat": self.lat, "lon": self.lon}
+    
+    @property
+    def needs_refuel(self) -> bool:
+        """Check if station needs refuelling"""
+        threshold = self.low_fuel_threshold or 5000
+        return self.current_level_liters < threshold
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
@@ -89,6 +97,8 @@ class StationData:
             "current_level": f"{self.current_level_liters:,.0f} L",
             "availability": self.availability,
             "coordinates": self.coordinates,
+            "request_method": self.request_method,
+            "needs_refuel": self.needs_refuel,
         }
 
 
@@ -134,6 +144,7 @@ class TruckData:
     fuel_level_percent: int
     fuel_type: str
     status: str
+    compartments: Optional[List[Dict[str, Any]]] = None
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
@@ -144,6 +155,7 @@ class TruckData:
             "fuel_level": f"{self.fuel_level_percent}%",
             "fuel_type": self.fuel_type.title(),
             "status": self.status.title(),
+            "compartments": self.compartments or [],
         }
 
 

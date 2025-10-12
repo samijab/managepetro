@@ -68,6 +68,15 @@ class ReachableRangeRequest(BaseModel):
     )
 
 
+class DispatchOptimizationRequest(BaseModel):
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+    truck_id: str = Field(..., description="Truck ID to dispatch")
+    llm_model: str = Field(default="gemini-2.5-flash", description="AI model to use")
+    depot_location: str = Field(default="Toronto", description="Starting depot location")
+
+
+
 @app.post("/api/routes/optimize")
 async def optimize_route_ai(request: RouteRequest):
     """AI-powered route optimization using markdown-refined prompts"""
@@ -174,6 +183,9 @@ def get_stations():
                     "code": station.code,
                     "lat": float(station.lat),
                     "lon": float(station.lon),
+                    "request_method": station.request_method or "Manual",
+                    "low_fuel_threshold": station.low_fuel_threshold or 5000,
+                    "needs_refuel": station.needs_refuel,
                 }
                 for station in stations
             ],
@@ -199,6 +211,7 @@ def get_trucks():
                     "fuel_type": truck.fuel_type,
                     "status": truck.status,
                     "code": truck.code,
+                    "compartments": truck.compartments or [],
                 }
                 for truck in trucks
             ],
@@ -220,3 +233,18 @@ def health_check():
             "tomtom_routing": "available",
         },
     }
+
+
+# Dispatch optimization endpoint
+@app.post("/api/dispatch/optimize")
+async def optimize_dispatch(request: DispatchOptimizationRequest):
+    """AI-powered dispatch optimization for trucks to stations needing fuel"""
+    try:
+        result = await llm_service.optimize_dispatch(
+            truck_id=request.truck_id,
+            depot_location=request.depot_location,
+            llm_model=request.llm_model,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dispatch optimization failed: {str(e)}")

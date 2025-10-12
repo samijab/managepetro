@@ -5,6 +5,8 @@ from models.data_models import (
     StationData,
     DeliveryData,
     WeatherResult,
+    TruckData,
+    WeatherData,
 )
 
 
@@ -99,3 +101,71 @@ class PromptService:
         formatted += f"To {weather.to_location.city}: {weather.to_location.temp_c}°C, "
         formatted += f"{weather.to_location.condition}, Wind: {weather.to_location.wind_kph} km/h\n"
         return formatted
+
+    def format_dispatch_prompt(
+        self,
+        truck: TruckData,
+        stations: List[StationData],
+        depot_location: str,
+        depot_weather: WeatherData,
+    ) -> str:
+        """Create dispatch optimization prompt using standardized data models"""
+        template = self.load_template("dispatch_optimization")
+
+        # Format compartments info
+        compartments_text = self._format_compartments_data(truck)
+        
+        # Format stations info
+        stations_text = self._format_dispatch_stations_data(stations)
+        
+        # Format depot weather
+        weather_text = f"{depot_weather.condition}, {depot_weather.temp_c}°C, Wind: {depot_weather.wind_kph} km/h"
+
+        variables = {
+            "truck_code": truck.code,
+            "truck_plate": truck.plate,
+            "truck_status": truck.status,
+            "truck_fuel_level": truck.fuel_level_percent,
+            "compartments_info": compartments_text,
+            "depot_location": depot_location,
+            "depot_weather": weather_text,
+            "stations_info": stations_text,
+        }
+
+        formatted_prompt = template
+        for key, value in variables.items():
+            formatted_prompt = formatted_prompt.replace(f"{{{key}}}", str(value))
+
+        return formatted_prompt
+
+    def _format_compartments_data(self, truck: TruckData) -> str:
+        """Format truck compartment data"""
+        if truck.compartments:
+            formatted = ""
+            for comp in truck.compartments:
+                formatted += f"  - Compartment {comp['compartment_number']}: {comp['fuel_type']} - "
+                formatted += f"{comp['capacity_liters']} L capacity ({comp['current_level_liters']} L current)\n"
+            return formatted.rstrip()
+        else:
+            return f"  - Single compartment: {truck.fuel_type} - {truck.capacity_liters} L"
+
+    def _format_dispatch_stations_data(self, stations: List[StationData]) -> str:
+        """Format stations needing fuel for dispatch"""
+        if not stations:
+            return "No stations requiring fuel delivery."
+
+        formatted = ""
+        for i, station in enumerate(stations, 1):
+            fuel_percent = int((station.current_level_liters / station.capacity_liters) * 100)
+            needed = station.capacity_liters - station.current_level_liters
+            formatted += f"""
+{i}. {station.name} ({station.code})
+   - Location: {station.city}, {station.region}
+   - Coordinates: {station.lat}, {station.lon}
+   - Fuel Type: {station.fuel_type}
+   - Current Level: {station.current_level_liters} L ({fuel_percent}%)
+   - Capacity: {station.capacity_liters} L
+   - Needed: {needed} L
+   - Request Method: {station.request_method}
+"""
+        return formatted.rstrip()
