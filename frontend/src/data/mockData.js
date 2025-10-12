@@ -1,5 +1,10 @@
 /**
- * Mock data for development - will be replaced by API calls
+ * Mock data for development - DEPRECATED
+ * 
+ * This file is kept for reference only. The application now uses
+ * real API calls to the backend. Do not use this data in new code.
+ * 
+ * @deprecated Use API service instead (src/services/api.js)
  */
 
 export const mockRouteData = {

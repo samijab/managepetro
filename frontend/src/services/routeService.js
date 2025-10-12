@@ -5,6 +5,17 @@ import Api from "./api";
  */
 class RouteService {
   /**
+   * Generic error handler
+   * @param {Error} error - The error to handle
+   * @param {string} defaultMessage - Default error message
+   * @returns {Error} Formatted error
+   */
+  handleError(error, defaultMessage) {
+    console.error(defaultMessage, error);
+    return new Error(error.message || defaultMessage);
+  }
+
+  /**
    * Transform API response to standardized format
    * @param {Object} apiData - Raw API response
    * @returns {Object} Standardized route data
@@ -76,8 +87,7 @@ class RouteService {
 
       return this.transformApiResponse(response);
     } catch (error) {
-      console.error("Route calculation failed:", error);
-      throw new Error(error.message || "Failed to calculate route. Please try again.");
+      throw this.handleError(error, "Failed to calculate route. Please try again.");
     }
   }
 
@@ -90,8 +100,7 @@ class RouteService {
       const response = await Api.getTrucks();
       return response.trucks || [];
     } catch (error) {
-      console.error("Failed to fetch trucks:", error);
-      throw new Error("Failed to fetch available trucks");
+      throw this.handleError(error, "Failed to fetch available trucks");
     }
   }
 
@@ -104,8 +113,7 @@ class RouteService {
       const response = await Api.getStations();
       return response.stations || [];
     } catch (error) {
-      console.error("Failed to fetch stations:", error);
-      throw new Error("Failed to fetch stations");
+      throw this.handleError(error, "Failed to fetch stations");
     }
   }
 }
