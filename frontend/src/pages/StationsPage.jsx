@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import DynamicTable from "../components/DynamicTable";
-import { mockStations } from "../data/mockData";
+import Api from "../services/api";
 
 function StationsPage() {
   const [stations, setStations] = useState([]);
   const [filteredStations, setFilteredStations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Column configuration for the stations table
   const columns = [
@@ -78,26 +79,31 @@ function StationsPage() {
   ];
 
   useEffect(() => {
-    // Simulate API call
     const loadStations = async () => {
       setLoading(true);
+      setError(null);
 
-      // Add mock fuel level and priority data
-      const enhancedStations = mockStations.map((station, index) => ({
-        ...station,
-        id: station.station_id,
-        fuel_type: ["Gasoline", "Diesel", "Premium"][index % 3],
-        fuel_level: Math.floor(Math.random() * 100),
-        priority: ["High", "Medium", "Low"][Math.floor(Math.random() * 3)],
-        last_delivery: new Date(
-          Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-        ).toLocaleDateString(),
-      }));
+      try {
+        const response = await Api.getStations();
+        
+        // Transform API data to match table expectations
+        const enhancedStations = (response.stations || []).map((station, index) => ({
+          ...station,
+          id: station.station_id,
+          fuel_type: station.fuel_type ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1) : "Diesel",
+          // Calculate priority based on fuel level
+          priority: station.fuel_level < 30 ? "High" : station.fuel_level < 60 ? "Medium" : "Low",
+          last_delivery: "N/A", // Backend doesn't provide this yet
+        }));
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate delay
-      setStations(enhancedStations);
-      setFilteredStations(enhancedStations);
-      setLoading(false);
+        setStations(enhancedStations);
+        setFilteredStations(enhancedStations);
+      } catch (err) {
+        console.error("Failed to load stations:", err);
+        setError(err.message || "Failed to load stations");
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadStations();
@@ -116,6 +122,21 @@ function StationsPage() {
             <div className="flex items-center justify-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
               <span className="text-gray-600">Loading stations...</span>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-8">
+            <div className="flex items-center justify-center space-x-3">
+              <span className="text-red-600 text-lg">⚠</span>
+              <span className="text-red-800">{error}</span>
             </div>
           </div>
         </main>

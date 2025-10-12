@@ -153,6 +153,61 @@ def calculate_range(request: ReachableRangeRequest):
         raise HTTPException(status_code=500, detail=f"Reachable range error: {str(e)}")
 
 
+# Stations endpoint
+@app.get("/api/stations")
+def get_stations():
+    """Get all stations from database"""
+    try:
+        stations = llm_service._get_database_data("", "").stations
+        return {
+            "stations": [
+                {
+                    "station_id": f"station-{station.id:03d}",
+                    "name": station.name,
+                    "city": station.city,
+                    "region": station.region,
+                    "country": "Canada",
+                    "fuel_type": station.fuel_type,
+                    "capacity_liters": station.capacity_liters,
+                    "current_level_liters": station.current_level_liters,
+                    "fuel_level": int((station.current_level_liters / station.capacity_liters) * 100) if station.capacity_liters > 0 else 0,
+                    "code": station.code,
+                    "lat": float(station.lat),
+                    "lon": float(station.lon),
+                }
+                for station in stations
+            ],
+            "count": len(stations),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stations: {str(e)}")
+
+
+# Trucks endpoint
+@app.get("/api/trucks")
+def get_trucks():
+    """Get all trucks from database"""
+    try:
+        trucks = llm_service._get_database_data("", "").trucks
+        return {
+            "trucks": [
+                {
+                    "truck_id": f"truck-{truck.id:03d}",
+                    "plate_number": truck.plate,
+                    "capacity_liters": truck.capacity_liters,
+                    "fuel_level_percent": truck.fuel_level_percent,
+                    "fuel_type": truck.fuel_type,
+                    "status": truck.status,
+                    "code": truck.code,
+                }
+                for truck in trucks
+            ],
+            "count": len(trucks),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch trucks: {str(e)}")
+
+
 # Health check endpoint
 @app.get("/api/health")
 def health_check():
