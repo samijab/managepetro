@@ -14,6 +14,7 @@ from models.data_models import (
     DatabaseResult,
     WeatherResult,
     WeatherData,
+    RouteOptimizationResponse,
 )
 from typing import Dict, Any, Optional, List
 
@@ -360,84 +361,57 @@ class LLMService:
             }
             traffic_info = {"note": "Traffic analysis in AI response"}
 
-        return {
-            "route_summary": {
-                # Core route information
-                "from": route_summary.get("from", "Unknown"),
-                "to": route_summary.get("to", "Unknown"),
-                "total_distance": route_summary.get("total_distance", "AI Generated"),
-                "estimated_duration": route_summary.get(
-                    "estimated_duration", "AI Generated"
-                ),
-                "duration_with_traffic": route_summary.get(
-                    "duration_with_traffic", "See AI analysis"
-                ),
-                # Route details
-                "primary_route": route_summary.get(
-                    "primary_route", "AI Optimized Route"
-                ),
-                "route_type": route_summary.get("route_type", "AI Optimized"),
-                # Timing and conditions
-                "best_departure_time": route_summary.get(
-                    "best_departure_time", "See AI recommendations"
-                ),
-                "weather_impact": route_summary.get(
-                    "weather_impact", f"Current: {weather_data.from_location.condition}"
-                ),
-                # Fuel planning
-                "fuel_stops": route_summary.get(
-                    "fuel_stops", "See fuel stations section"
-                ),
-                "estimated_fuel_cost": route_summary.get(
-                    "estimated_fuel_cost", "Calculated by AI"
-                ),
-                # Meta information
-                "ai_generated": True,
-                "optimization_factors": [
-                    "Real-time weather",
-                    "Fuel station inventory",
-                    "Historical delivery data",
-                ],
-            },
-            "directions": parsed_directions,
-            "traffic_conditions": traffic_info,
-            "weather_impact": {
-                "from_location": {
-                    "city": weather_data.from_location.city,
-                    "temperature": f"{weather_data.from_location.temp_c}°C",
-                    "condition": weather_data.from_location.condition,
-                    "wind": f"{weather_data.from_location.wind_kph} km/h",
-                    "visibility": "Good",
-                },
-                "to_location": {
-                    "city": weather_data.to_location.city,
-                    "temperature": f"{weather_data.to_location.temp_c}°C",
-                    "condition": weather_data.to_location.condition,
-                    "wind": f"{weather_data.to_location.wind_kph} km/h",
-                    "visibility": "Good",
-                },
-                "route_impact": f"Weather conditions: {weather_data.from_location.condition}",
-                "driving_conditions": (
-                    "Normal"
-                    if weather_data.from_location.condition != "Rain"
-                    else "Cautious"
-                ),
-            },
-            # Use standardized to_api_dict methods
-            "fuel_stations": [
-                station.to_api_dict() for station in db_data.stations[:5]
+        # Build route summary with defaults
+        complete_route_summary = {
+            # Core route information
+            "from": route_summary.get("from", "Unknown"),
+            "to": route_summary.get("to", "Unknown"),
+            "total_distance": route_summary.get("total_distance", "AI Generated"),
+            "estimated_duration": route_summary.get(
+                "estimated_duration", "AI Generated"
+            ),
+            "duration_with_traffic": route_summary.get(
+                "duration_with_traffic", "See AI analysis"
+            ),
+            # Route details
+            "primary_route": route_summary.get(
+                "primary_route", "AI Optimized Route"
+            ),
+            "route_type": route_summary.get("route_type", "AI Optimized"),
+            # Timing and conditions
+            "best_departure_time": route_summary.get(
+                "best_departure_time", "See AI recommendations"
+            ),
+            "weather_impact": route_summary.get(
+                "weather_impact", f"Current: {weather_data.from_location.condition}"
+            ),
+            # Fuel planning
+            "fuel_stops": route_summary.get(
+                "fuel_stops", "See fuel stations section"
+            ),
+            "estimated_fuel_cost": route_summary.get(
+                "estimated_fuel_cost", "Calculated by AI"
+            ),
+            # Meta information
+            "ai_generated": True,
+            "optimization_factors": [
+                "Real-time weather",
+                "Fuel station inventory",
+                "Historical delivery data",
             ],
-            "recent_deliveries": [
-                delivery.to_api_dict() for delivery in db_data.deliveries[:5]
-            ],
-            "available_trucks": [truck.to_api_dict() for truck in db_data.trucks[:3]],
-            "data_sources": {
-                **db_data.to_counts_dict(),
-                "weather_data": "included" if weather_data else "unavailable",
-                "ai_analysis": "included",
-            },
-            "ai_analysis": ai_response,
         }
+
+        # Use the centralized response model
+        response = RouteOptimizationResponse.from_parsed_data(
+            route_summary=complete_route_summary,
+            parsed_directions=parsed_directions,
+            traffic_info=traffic_info,
+            db_data=db_data,
+            weather_data=weather_data,
+            ai_response=ai_response,
+        )
+
+        return response.to_api_dict()
 
     def _extract_directions_from_ai(self, ai_response: str) -> list:
         """Extract turn-by-turn directions from AI response"""

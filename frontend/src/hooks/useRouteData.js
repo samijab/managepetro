@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useOptimizeRoute } from "./useApiQueries";
-import routeService from "../services/routeService";
+import Api from "../services/api";
 
 /**
  * Custom hook for managing route calculation state using React Query
@@ -28,7 +28,7 @@ export function useRouteData() {
       { from, to, llmModel },
       {
         onSuccess: (result) => {
-          const transformedData = routeService.transformApiResponse(result);
+          const transformedData = Api.transformRouteResponse(result);
           setRouteData({
             from,
             to,
