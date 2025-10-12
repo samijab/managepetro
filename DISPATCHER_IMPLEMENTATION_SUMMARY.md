@@ -22,7 +22,6 @@ Successfully implemented a complete dispatcher system for optimizing truck fuel 
 **Modified:**
 5. `frontend/src/App.jsx` - Added dispatcher route
 6. `frontend/src/components/Header.jsx` - Added dispatcher navigation
-7. `frontend/package.json` - Added prop-types dependency
 
 ### Documentation (3 files created)
 1. `DISPATCHER_FEATURE.md` - Complete feature documentation
@@ -72,8 +71,9 @@ All criteria met:
 
 ## Dependencies Added
 
-- Frontend: `prop-types` for React component validation
-- Backend: None (uses existing infrastructure)
+- None - Feature uses only existing dependencies
+- Backend: FastAPI, MySQL connector, Google Gemini AI (existing)
+- Frontend: React, React Router, Axios, Tailwind CSS, Heroicons (existing)
 
 ## Deployment
 

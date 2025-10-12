@@ -266,7 +266,6 @@ Potential improvements for future iterations:
 
 ## Dependencies
 
-No new major dependencies were added. The feature uses:
+No new dependencies were added. The feature uses:
 - Existing backend: FastAPI, MySQL connector, Google Gemini AI
 - Existing frontend: React, React Router, Axios, Tailwind CSS, Heroicons
-- New frontend: `prop-types` (for React component prop validation)

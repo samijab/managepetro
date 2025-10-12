@@ -1,5 +1,4 @@
 import { XMarkIcon, TruckIcon, MapIcon } from "@heroicons/react/24/outline";
-import PropTypes from "prop-types";
 
 function DispatchResultCard({ result, onClose }) {
   const { dispatch_summary, truck, route_stops, ai_analysis } = result;
@@ -206,28 +205,5 @@ function DispatchResultCard({ result, onClose }) {
     </div>
   );
 }
-
-DispatchResultCard.propTypes = {
-  result: PropTypes.shape({
-    dispatch_summary: PropTypes.object,
-    truck: PropTypes.shape({
-      truck_id: PropTypes.string,
-      code: PropTypes.string,
-      plate: PropTypes.string,
-      compartments: PropTypes.array,
-    }).isRequired,
-    route_stops: PropTypes.arrayOf(
-      PropTypes.shape({
-        station: PropTypes.string,
-        distance: PropTypes.string,
-        fuel_delivery: PropTypes.string,
-        eta: PropTypes.string,
-        reason: PropTypes.string,
-      })
-    ),
-    ai_analysis: PropTypes.string,
-  }).isRequired,
-  onClose: PropTypes.func.isRequired,
-};
 
 export default DispatchResultCard;
