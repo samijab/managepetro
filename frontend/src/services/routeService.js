@@ -33,7 +33,6 @@ class RouteService {
 
     return {
       eta: {
-        arrival: routeSummary.estimated_duration || "N/A",
         duration: routeSummary.estimated_duration || "N/A",
         distance: routeSummary.total_distance || "N/A",
       },

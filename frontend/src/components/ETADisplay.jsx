@@ -1,7 +1,6 @@
 import {
   ClockIcon,
   MapPinIcon,
-  RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
 
 function ETADisplay({ eta }) {
@@ -12,27 +11,14 @@ function ETADisplay({ eta }) {
       </h3>
 
       <div className="space-y-4">
-        {/* Arrival Time */}
+        {/* Duration */}
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
             <ClockIcon className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">{eta.arrival}</p>
-            <p className="text-sm text-gray-500">Estimated Time of Arrival</p>
-          </div>
-        </div>
-
-        {/* Duration */}
-        <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
-            <RocketLaunchIcon className="w-6 h-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-xl font-semibold text-gray-900">
-              {eta.duration}
-            </p>
-            <p className="text-sm text-gray-500">Travel Time</p>
+            <p className="text-2xl font-bold text-gray-900">{eta.duration}</p>
+            <p className="text-sm text-gray-500">Estimated Travel Time</p>
           </div>
         </div>
 
