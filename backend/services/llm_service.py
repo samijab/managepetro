@@ -762,9 +762,19 @@ class LLMService:
                         # Save previous stop if exists
                         if current_stop:
                             route_stops.append(current_stop)
-                        # Start new stop
-                        station_info = line.split(".", 1)[1].strip()
-                        current_stop = {"station": station_info}
+                        # Start new stop - extract step number for sorting
+                        parts = line.split(".", 1)
+                        try:
+                            step_number = int(parts[0].strip())
+                            station_info = parts[1].strip()
+                            current_stop = {
+                                "step_number": step_number,
+                                "station": station_info
+                            }
+                        except (ValueError, IndexError):
+                            # Fallback if step number parsing fails
+                            station_info = line.split(".", 1)[1].strip()
+                            current_stop = {"station": station_info}
                     elif "Distance from previous:" in line:
                         current_stop["distance"] = line.split(":")[-1].strip()
                     elif "Fuel to deliver:" in line:
@@ -777,6 +787,13 @@ class LLMService:
                 # Add last stop
                 if current_stop:
                     route_stops.append(current_stop)
+                
+                # Sort stops by step_number to ensure correct order
+                route_stops.sort(key=lambda x: x.get("step_number", float("inf")))
+                
+                # Remove step_number from the output as it's only used for sorting
+                for stop in route_stops:
+                    stop.pop("step_number", None)
         except Exception as e:
             print(f"Error parsing route stops: {e}")
 
