@@ -13,7 +13,9 @@ CREATE TABLE stations (
   region VARCHAR(100),
   fuel_type ENUM('diesel', 'gasoline', 'propane') DEFAULT 'diesel',
   capacity_liters DECIMAL(12,2),
-  current_level_liters DECIMAL(12,2)
+  current_level_liters DECIMAL(12,2),
+  request_method ENUM('IoT', 'Manual') DEFAULT 'Manual',
+  low_fuel_threshold DECIMAL(12,2) DEFAULT 5000
 );
 
 -- TRUCKS
@@ -48,6 +50,19 @@ CREATE TABLE station_fuel_levels (
   recorded_at DATETIME DEFAULT NOW(),
   fuel_level_liters DECIMAL(12,2),
   FOREIGN KEY (station_id) REFERENCES stations(id)
+);
+
+-- TRUCK COMPARTMENTS
+
+CREATE TABLE IF NOT EXISTS truck_compartments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  truck_id INT NOT NULL,
+  compartment_number INT NOT NULL,
+  fuel_type ENUM('diesel', 'gasoline', 'propane') NOT NULL,
+  capacity_liters DECIMAL(12,2) NOT NULL,
+  current_level_liters DECIMAL(12,2) DEFAULT 0,
+  FOREIGN KEY (truck_id) REFERENCES trucks(id),
+  UNIQUE KEY unique_truck_compartment (truck_id, compartment_number)
 );
 
 -- WEATHER

@@ -18,6 +18,7 @@ const llmOptions = [
 const pageConfig = {
   "/": { showLLMDropdown: true },
   "/stations": { showLLMDropdown: false },
+  "/dispatcher": { showLLMDropdown: false },
   "/trucks": { showLLMDropdown: false },
   "/dashboard": { showLLMDropdown: false },
 };
@@ -71,6 +72,16 @@ function Header({ selectedLLM, onLLMChange }) {
                   }`}
                 >
                   Route Optimization
+                </Link>
+                <Link
+                  to="/dispatcher"
+                  className={`text-lg font-medium transition-colors ${
+                    location.pathname === "/dispatcher"
+                      ? "text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Dispatcher
                 </Link>
                 <Link
                   to="/stations"
@@ -158,6 +169,17 @@ function Header({ selectedLLM, onLLMChange }) {
                 }`}
               >
                 Route Optimization
+              </Link>
+              <Link
+                to="/dispatcher"
+                onClick={closeMobileMenu}
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  location.pathname === "/dispatcher"
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                Dispatcher
               </Link>
               <Link
                 to="/stations"

@@ -84,6 +84,48 @@ class LLMService:
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
         return self._parse_comprehensive_response(ai_response, db_data, weather_data)
 
+    async def optimize_dispatch(
+        self, truck_id: str, depot_location: str, llm_model: str = "gemini-2.5-flash"
+    ) -> Dict[str, Any]:
+        """Optimize dispatch route for a truck to deliver fuel to stations in need"""
+        try:
+            # Get truck details
+            truck = self._get_truck_by_id(truck_id)
+            if not truck:
+                raise ValueError(f"Truck {truck_id} not found")
+
+            # Get stations needing fuel
+            stations_needing_fuel = self._get_stations_needing_refuel()
+            
+            # Get weather for depot location
+            try:
+                depot_weather = get_weather(depot_location)
+            except:
+                depot_weather = WeatherData(depot_location, 20, "Clear", 10, 50)
+
+            # Create dispatch optimization prompt
+            prompt = self._create_dispatch_prompt(
+                truck=truck,
+                stations=stations_needing_fuel,
+                depot_location=depot_location,
+                depot_weather=depot_weather,
+            )
+
+            # Get AI optimization
+            ai_response = await self._call_gemini(prompt, llm_model)
+
+            # Parse and return dispatch plan
+            return self._parse_dispatch_response(
+                ai_response=ai_response,
+                truck=truck,
+                stations=stations_needing_fuel,
+                depot_location=depot_location,
+            )
+
+        except Exception as e:
+            print(f"Dispatch optimization failed: {e}")
+            raise
+
     def _get_database_data(
         self, from_location: str, to_location: str
     ) -> DatabaseResult:
@@ -182,7 +224,8 @@ class LLMService:
                 try:
                     stations_query = """
                         SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters
+                               fuel_type, capacity_liters, current_level_liters,
+                               request_method, low_fuel_threshold
                         FROM stations 
                         ORDER BY name
                     """
@@ -215,7 +258,22 @@ class LLMService:
                     """
                     cursor.execute(trucks_query)
                     trucks_raw = cursor.fetchall()
-                    trucks = [TruckData(**row) for row in trucks_raw]
+                    
+                    trucks = []
+                    for truck_row in trucks_raw:
+                        # Get compartments for this truck
+                        compartments_query = """
+                            SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
+                            FROM truck_compartments
+                            WHERE truck_id = %s
+                            ORDER BY compartment_number
+                        """
+                        cursor.execute(compartments_query, (truck_row['id'],))
+                        compartments = cursor.fetchall()
+                        
+                        truck = TruckData(**truck_row, compartments=compartments)
+                        trucks.append(truck)
+                    
                     conn.commit()
                     return trucks
                 except MySQLError as e:
@@ -621,3 +679,280 @@ class LLMService:
             print(f"Error parsing traffic info: {e}")
 
         return traffic_info
+
+    def _get_truck_by_id(self, truck_id: str) -> Optional[TruckData]:
+        """Get a specific truck by ID"""
+        try:
+            # Extract numeric ID from truck_id (e.g., "truck-001" -> 1)
+            if truck_id.startswith("truck-"):
+                numeric_id = int(truck_id.split("-")[1])
+            else:
+                numeric_id = int(truck_id)
+
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor(dictionary=True, buffered=True)
+                try:
+                    truck_query = """
+                        SELECT id, code, plate, capacity_liters,
+                               fuel_level_percent, fuel_type, status
+                        FROM trucks
+                        WHERE id = %s
+                    """
+                    cursor.execute(truck_query, (numeric_id,))
+                    truck_row = cursor.fetchone()
+                    
+                    if not truck_row:
+                        return None
+                    
+                    # Get compartments
+                    compartments_query = """
+                        SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
+                        FROM truck_compartments
+                        WHERE truck_id = %s
+                        ORDER BY compartment_number
+                    """
+                    cursor.execute(compartments_query, (truck_row['id'],))
+                    compartments = cursor.fetchall()
+                    
+                    truck = TruckData(**truck_row, compartments=compartments)
+                    conn.commit()
+                    return truck
+                except MySQLError as e:
+                    conn.rollback()
+                    print(f"Query execution failed: {e.errno} - {e.msg}")
+                    return None
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Failed to get truck: {e}")
+            return None
+
+    def _get_stations_needing_refuel(self) -> List[StationData]:
+        """Get all stations that need refuelling"""
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor(dictionary=True, buffered=True)
+                try:
+                    stations_query = """
+                        SELECT id, code, name, lat, lon, city, region, 
+                               fuel_type, capacity_liters, current_level_liters,
+                               request_method, low_fuel_threshold
+                        FROM stations 
+                        WHERE current_level_liters < COALESCE(low_fuel_threshold, 5000)
+                        ORDER BY (current_level_liters / capacity_liters) ASC
+                        LIMIT 20
+                    """
+                    cursor.execute(stations_query)
+                    stations_raw = cursor.fetchall()
+                    stations = [StationData(**row) for row in stations_raw]
+                    conn.commit()
+                    return stations
+                except MySQLError as e:
+                    conn.rollback()
+                    print(f"Query execution failed: {e.errno} - {e.msg}")
+                    return []
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Failed to get stations: {e}")
+            return []
+
+    def _create_dispatch_prompt(
+        self,
+        truck: TruckData,
+        stations: List[StationData],
+        depot_location: str,
+        depot_weather: WeatherData,
+    ) -> str:
+        """Create a prompt for dispatch optimization"""
+        
+        # Format truck compartments
+        compartments_info = ""
+        if truck.compartments:
+            compartments_info = "\n".join([
+                f"  - Compartment {c['compartment_number']}: {c['fuel_type']} - "
+                f"{c['capacity_liters']} L capacity ({c['current_level_liters']} L current)"
+                for c in truck.compartments
+            ])
+        else:
+            compartments_info = f"  - Single compartment: {truck.fuel_type} - {truck.capacity_liters} L"
+
+        # Format stations needing fuel
+        stations_info = ""
+        for i, station in enumerate(stations, 1):
+            fuel_percent = int((station.current_level_liters / station.capacity_liters) * 100)
+            needed = station.capacity_liters - station.current_level_liters
+            stations_info += f"""
+{i}. {station.name} ({station.code})
+   - Location: {station.city}, {station.region}
+   - Coordinates: {station.lat}, {station.lon}
+   - Fuel Type: {station.fuel_type}
+   - Current Level: {station.current_level_liters} L ({fuel_percent}%)
+   - Capacity: {station.capacity_liters} L
+   - Needed: {needed} L
+   - Request Method: {station.request_method}
+"""
+
+        prompt = f"""
+# DISPATCH OPTIMIZATION REQUEST
+
+## Truck Information
+Truck: {truck.code} ({truck.plate})
+Status: {truck.status}
+Current Fuel Level: {truck.fuel_level_percent}%
+
+### Compartments:
+{compartments_info}
+
+## Depot Location
+Starting Point: {depot_location}
+Weather: {depot_weather.condition}, {depot_weather.temp_c}°C, Wind: {depot_weather.wind_kph} km/h
+
+## Stations Requiring Fuel Delivery
+{stations_info}
+
+## Optimization Requirements
+1. **Route Planning**: Create an optimized route from {depot_location} to deliver fuel to stations
+2. **Fuel Type Matching**: Only deliver to stations that match the truck's compartment fuel types
+3. **Capacity Planning**: Ensure truck has enough fuel in appropriate compartments for deliveries
+4. **Complete Expenditure**: All fuel in truck compartments should be delivered by end of day
+5. **Priority**: Stations with lower fuel levels should be prioritized
+6. **Request Method**: Consider that IoT stations auto-requested while Manual stations were requested by staff
+7. **Route Efficiency**: Minimize total distance while serving maximum stations
+8. **Weather Impact**: Account for current weather conditions in timing and safety
+
+## Expected Output Format
+
+### DISPATCH SUMMARY
+- Total Stations to Visit: [number]
+- Total Distance: [distance] km
+- Estimated Duration: [time]
+- Total Fuel to Deliver: [volume] L
+- Departure Time: [recommended time]
+- Return to Depot: [estimated time]
+
+### OPTIMIZED ROUTE
+1. [Station name] - [City]
+   - Distance from previous: [km]
+   - Fuel to deliver: [volume] L ([fuel type])
+   - Compartment: [number]
+   - ETA: [time]
+   - Reason: [why this station/priority]
+
+[Continue for all stations...]
+
+### COMPARTMENT ALLOCATION
+- Compartment 1 ([fuel type]): [allocated volume] L to [station names]
+- Compartment 2 ([fuel type]): [allocated volume] L to [station names]
+[etc...]
+
+### OPTIMIZATION RATIONALE
+[Explain the logic behind the route selection, prioritization, and fuel allocation]
+
+### WEATHER & SAFETY CONSIDERATIONS
+[Any weather-related recommendations]
+
+### RECOMMENDATIONS
+[Any additional recommendations for the dispatcher]
+"""
+        return prompt
+
+    def _parse_dispatch_response(
+        self,
+        ai_response: str,
+        truck: TruckData,
+        stations: List[StationData],
+        depot_location: str,
+    ) -> Dict[str, Any]:
+        """Parse the AI response for dispatch optimization"""
+        
+        # Extract dispatch summary
+        dispatch_summary = {}
+        try:
+            if "DISPATCH SUMMARY" in ai_response:
+                summary_section = ai_response.split("DISPATCH SUMMARY")[1]
+                if "###" in summary_section:
+                    summary_section = summary_section.split("###")[0]
+                
+                for line in summary_section.strip().split("\n"):
+                    line = line.strip()
+                    if "Total Stations to Visit:" in line:
+                        dispatch_summary["total_stations"] = line.split(":")[1].strip()
+                    elif "Total Distance:" in line:
+                        dispatch_summary["total_distance"] = line.split(":")[1].strip()
+                    elif "Estimated Duration:" in line:
+                        dispatch_summary["estimated_duration"] = line.split(":")[1].strip()
+                    elif "Total Fuel to Deliver:" in line:
+                        dispatch_summary["total_fuel"] = line.split(":")[1].strip()
+                    elif "Departure Time:" in line:
+                        dispatch_summary["departure_time"] = line.split(":")[1].strip()
+                    elif "Return to Depot:" in line:
+                        dispatch_summary["return_time"] = line.split(":")[1].strip()
+        except Exception as e:
+            print(f"Error parsing dispatch summary: {e}")
+
+        # Extract route stops
+        route_stops = []
+        try:
+            if "OPTIMIZED ROUTE" in ai_response:
+                route_section = ai_response.split("OPTIMIZED ROUTE")[1]
+                if "###" in route_section:
+                    route_section = route_section.split("###")[0]
+                
+                # Parse numbered route items
+                lines = route_section.strip().split("\n")
+                current_stop = {}
+                for line in lines:
+                    line = line.strip()
+                    if line and line[0].isdigit() and "." in line:
+                        # Save previous stop if exists
+                        if current_stop:
+                            route_stops.append(current_stop)
+                        # Start new stop
+                        station_info = line.split(".", 1)[1].strip()
+                        current_stop = {"station": station_info}
+                    elif "Distance from previous:" in line:
+                        current_stop["distance"] = line.split(":")[1].strip()
+                    elif "Fuel to deliver:" in line:
+                        current_stop["fuel_delivery"] = line.split(":")[1].strip()
+                    elif "ETA:" in line:
+                        current_stop["eta"] = line.split(":")[1].strip()
+                    elif "Reason:" in line:
+                        current_stop["reason"] = line.split(":")[1].strip()
+                
+                # Add last stop
+                if current_stop:
+                    route_stops.append(current_stop)
+        except Exception as e:
+            print(f"Error parsing route stops: {e}")
+
+        return {
+            "dispatch_summary": dispatch_summary,
+            "truck": {
+                "truck_id": f"truck-{truck.id:03d}",
+                "code": truck.code,
+                "plate": truck.plate,
+                "status": truck.status,
+                "compartments": truck.compartments or [],
+            },
+            "depot_location": depot_location,
+            "route_stops": route_stops,
+            "stations_available": [
+                {
+                    "station_id": f"station-{s.id:03d}",
+                    "name": s.name,
+                    "city": s.city,
+                    "region": s.region,
+                    "fuel_type": s.fuel_type,
+                    "current_level": s.current_level_liters,
+                    "capacity": s.capacity_liters,
+                    "fuel_level_percent": int((s.current_level_liters / s.capacity_liters) * 100),
+                    "request_method": s.request_method,
+                    "needs_refuel": s.needs_refuel,
+                    "lat": float(s.lat),
+                    "lon": float(s.lon),
+                }
+                for s in stations
+            ],
+            "ai_analysis": ai_response,
+        }
