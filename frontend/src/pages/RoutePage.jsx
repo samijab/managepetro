@@ -2,6 +2,11 @@ import RouteForm from "../components/RouteForm";
 import ActionButtons from "../components/ActionButtons";
 import ETADisplay from "../components/ETADisplay";
 import InstructionsList from "../components/InstructionsList";
+import WeatherImpactCard from "../components/WeatherImpactCard";
+import TrafficConditionsCard from "../components/TrafficConditionsCard";
+import FuelStationsCard from "../components/FuelStationsCard";
+import AvailableTrucksCard from "../components/AvailableTrucksCard";
+import AIAnalysisCard from "../components/AIAnalysisCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import { useRouteData } from "../hooks/useRouteData";
@@ -37,14 +42,54 @@ function RoutePage({ selectedLLM }) {
         {isLoading && <LoadingSpinner />}
 
         {routeData.eta && !isLoading && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <ETADisplay eta={routeData.eta} />
+          <div className="space-y-8">
+            {/* Main route information - side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <ETADisplay eta={routeData.eta} />
+              </div>
+
+              <div className="lg:col-span-2">
+                <InstructionsList instructions={routeData.instructions} />
+              </div>
             </div>
 
-            <div className="lg:col-span-2">
-              <InstructionsList instructions={routeData.instructions} />
+            {/* Additional route details - 2 column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weather Impact Card */}
+              {routeData.weatherImpact && (
+                <WeatherImpactCard weatherImpact={routeData.weatherImpact} />
+              )}
+
+              {/* Traffic Conditions Card */}
+              {routeData.trafficConditions && (
+                <TrafficConditionsCard
+                  trafficConditions={routeData.trafficConditions}
+                />
+              )}
             </div>
+
+            {/* Resource Cards - 2 column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Fuel Stations Card */}
+              {routeData.fuelStations && routeData.fuelStations.length > 0 && (
+                <FuelStationsCard fuelStations={routeData.fuelStations} />
+              )}
+
+              {/* Available Trucks Card */}
+              {routeData.availableTrucks &&
+                routeData.availableTrucks.length > 0 && (
+                  <AvailableTrucksCard trucks={routeData.availableTrucks} />
+                )}
+            </div>
+
+            {/* AI Analysis Card - Full width */}
+            {(routeData.aiAnalysis || routeData.routeSummary) && (
+              <AIAnalysisCard
+                aiAnalysis={routeData.aiAnalysis}
+                routeSummary={routeData.routeSummary}
+              />
+            )}
           </div>
         )}
       </div>
