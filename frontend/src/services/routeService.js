@@ -30,6 +30,7 @@ class RouteService {
     const recentDeliveries = apiData.recent_deliveries || [];
     const availableTrucks = apiData.available_trucks || [];
     const aiAnalysis = apiData.ai_analysis || "";
+    const dataSources = apiData.data_sources || {};
 
     return {
       eta: {
@@ -65,6 +66,7 @@ class RouteService {
       recentDeliveries: recentDeliveries,
       availableTrucks: availableTrucks,
       aiAnalysis: aiAnalysis,
+      dataSources: dataSources,
     };
   }
 

@@ -17,6 +17,7 @@ export function useRouteData() {
     recentDeliveries: [],
     availableTrucks: [],
     aiAnalysis: "",
+    dataSources: null,
     isLoading: false,
     error: null,
   });
@@ -43,6 +44,7 @@ export function useRouteData() {
         recentDeliveries: result.recentDeliveries,
         availableTrucks: result.availableTrucks,
         aiAnalysis: result.aiAnalysis,
+        dataSources: result.dataSources,
         isLoading: false,
         error: null,
       });
@@ -68,6 +70,7 @@ export function useRouteData() {
       recentDeliveries: [],
       availableTrucks: [],
       aiAnalysis: "",
+      dataSources: null,
       isLoading: false,
       error: null,
     });
