@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Callable, Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -15,6 +15,29 @@ app = FastAPI(
 
 # Initialize services
 llm_service = LLMService()
+
+
+# Error handling helper
+def handle_api_error(operation: Callable[[], Any], error_prefix: str = "Operation failed"):
+    """
+    Helper function to handle API errors consistently.
+    
+    Args:
+        operation: Callable that may raise exceptions
+        error_prefix: Prefix for the error message
+        
+    Returns:
+        Result of the operation
+        
+    Raises:
+        HTTPException: With appropriate status code and error message
+    """
+    try:
+        return operation()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{error_prefix}: {str(e)}")
 
 
 # Pydantic models for request/response (Updated for Pydantic v2)
@@ -83,7 +106,7 @@ def read_item(item_id: int, q: Union[str, None] = None):
 @app.post("/api/routes/optimize")
 async def optimize_route_ai(request: RouteRequest):
     """AI-powered route optimization using markdown-refined prompts"""
-    try:
+    async def _optimize():
         if request.use_ai_optimization:
             # Use AI service with markdown refinement
             result = await llm_service.optimize_route(
@@ -97,69 +120,64 @@ async def optimize_route_ai(request: RouteRequest):
                 "from_location": request.from_location,
                 "to_location": request.to_location,
             }
-
+    
+    try:
+        return await _optimize()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Weather endpoint (refactored)
+# Weather endpoint
 @app.post("/api/weather")
 def get_weather_info(request: WeatherRequest):
     """Get current weather information for a city"""
-    try:
-        weather_data = get_weather(request.city)
-        return {"city": request.city, "weather": weather_data}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Weather service error: {str(e)}")
+    return handle_api_error(
+        lambda: {"city": request.city, "weather": get_weather(request.city)},
+        "Weather service error"
+    )
 
 
-# TomTom route endpoint (refactored)
+# TomTom route endpoint
 @app.post("/api/routes/tomtom")
 def calculate_tomtom_route(request: TomTomRouteRequest):
     """Calculate route using TomTom API"""
-    try:
+    def _calculate():
         origin = (request.origin_lat, request.origin_lon)
         destination = (request.dest_lat, request.dest_lon)
-
+        
         route_data = calculate_route(
             origin=origin,
             destination=destination,
             travelMode=request.travel_mode,
             routeType=request.route_type,
         )
-
+        
         return {"origin": origin, "destination": destination, "route_data": route_data}
+    
+    return handle_api_error(_calculate, "TomTom routing error")
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"TomTom routing error: {str(e)}")
 
-
-# Reachable range endpoint (refactored)
+# Reachable range endpoint
 @app.post("/api/routes/reachable-range")
 def calculate_range(request: ReachableRangeRequest):
     """Calculate reachable range using TomTom API"""
-    try:
+    def _calculate():
         origin = (request.origin_lat, request.origin_lon)
-
+        
         range_data = calculate_reachable_range(
             origin=origin,
             budget_value=request.budget_value,
             budget_type=request.budget_type,
         )
-
+        
         return {
             "origin": origin,
             "budget_type": request.budget_type,
             "budget_value": request.budget_value,
             "range_data": range_data,
         }
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Reachable range error: {str(e)}")
+    
+    return handle_api_error(_calculate, "Reachable range error")
 
 
 # Health check endpoint
