@@ -15,7 +15,7 @@ from models.data_models import (
     WeatherResult,
     WeatherData,
 )
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 
 # Load environment variables
 load_dotenv()
