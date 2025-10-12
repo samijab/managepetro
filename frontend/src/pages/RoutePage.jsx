@@ -17,8 +17,8 @@ function RoutePage({ selectedLLM }) {
   const { routeData, calculateRoute, clearRoute, isLoading, error } =
     useRouteData();
 
-  const handleRouteSubmit = async (from, to) => {
-    await calculateRoute(from, to, selectedLLM);
+  const handleRouteSubmit = async (from, to, timeData = {}) => {
+    await calculateRoute(from, to, selectedLLM, timeData);
   };
 
   const handleEditParameters = () => {

@@ -34,6 +34,36 @@ function ETADisplay({ eta }) {
             <p className="text-sm text-gray-500">Total Trip</p>
           </div>
         </div>
+
+        {/* Recommended Arrival Time */}
+        {eta.recommendedArrival && (
+          <div className="flex items-center space-x-3 pt-2 border-t border-gray-200">
+            <div className="flex-shrink-0">
+              <ClockIcon className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">
+                {eta.recommendedArrival}
+              </p>
+              <p className="text-sm text-gray-500">Expected Arrival</p>
+            </div>
+          </div>
+        )}
+
+        {/* Recommended Departure Time */}
+        {eta.recommendedDeparture && (
+          <div className="flex items-center space-x-3 pt-2 border-t border-gray-200">
+            <div className="flex-shrink-0">
+              <ClockIcon className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">
+                {eta.recommendedDeparture}
+              </p>
+              <p className="text-sm text-gray-500">Recommended Departure</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status Indicator */}

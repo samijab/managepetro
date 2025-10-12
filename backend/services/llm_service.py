@@ -101,7 +101,13 @@ class LLMService:
         return result
 
     async def optimize_route(
-        self, from_location: str, to_location: str, llm_model: str = "gemini-2.5-flash"
+        self,
+        from_location: str,
+        to_location: str,
+        llm_model: str = "gemini-2.5-flash",
+        departure_time: Optional[str] = None,
+        arrival_time: Optional[str] = None,
+        time_mode: str = "departure",
     ) -> Dict[str, Any]:
         """Generate route optimization using standardized data models"""
 
@@ -117,10 +123,15 @@ class LLMService:
             historical_routes=db_data.deliveries,
             weather_data=weather_data,
             vehicle_type="fuel_delivery_truck",
+            departure_time=departure_time,
+            arrival_time=arrival_time,
+            time_mode=time_mode,
         )
 
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
-        return self._parse_comprehensive_response(ai_response, db_data, weather_data)
+        return self._parse_comprehensive_response(
+            ai_response, db_data, weather_data, departure_time, arrival_time, time_mode
+        )
 
     async def optimize_dispatch(
         self, truck_id: str, depot_location: str, llm_model: str = "gemini-2.5-flash"
@@ -343,7 +354,13 @@ class LLMService:
             raise e
 
     def _parse_comprehensive_response(
-        self, ai_response: str, db_data: DatabaseResult, weather_data: WeatherResult
+        self,
+        ai_response: str,
+        db_data: DatabaseResult,
+        weather_data: WeatherResult,
+        departure_time: Optional[str] = None,
+        arrival_time: Optional[str] = None,
+        time_mode: str = "departure",
     ) -> Dict[str, Any]:
         """Parse AI response using standardized data models"""
 
@@ -363,6 +380,12 @@ class LLMService:
                 "ai_generated": True,
             }
             traffic_info = {"note": "Traffic analysis in AI response"}
+
+        # Add time-based information to traffic_info
+        if time_mode == "departure" and departure_time:
+            traffic_info["requested_departure"] = departure_time
+        elif time_mode == "arrival" and arrival_time:
+            traffic_info["requested_arrival"] = arrival_time
 
         # Build route summary with defaults
         complete_route_summary = {
@@ -384,6 +407,9 @@ class LLMService:
             # Timing and conditions
             "best_departure_time": route_summary.get(
                 "best_departure_time", "See AI recommendations"
+            ),
+            "recommended_arrival_time": route_summary.get(
+                "recommended_arrival_time", "See AI recommendations"
             ),
             "weather_impact": route_summary.get(
                 "weather_impact", f"Current: {weather_data.from_location.condition}"
@@ -592,6 +618,7 @@ class LLMService:
                     "Fuel Stops Required:": "fuel_stops",
                     "Estimated Fuel Cost:": "estimated_fuel_cost",
                     "Best Departure Time:": "best_departure_time",
+                    "Recommended Arrival Time:": "recommended_arrival_time",
                 }
                 
                 parsed = self._parse_key_value_lines(summary_section, mappings)

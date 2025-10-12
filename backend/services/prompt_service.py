@@ -41,6 +41,11 @@ class PromptService:
         historical_text = self._format_historical_data(historical_routes)
         weather_text = self._format_weather_data(weather_data)
 
+        # Handle time parameters
+        departure_time = kwargs.get("departure_time", "Not specified")
+        arrival_time = kwargs.get("arrival_time", "Not specified")
+        time_mode = kwargs.get("time_mode", "departure")
+
         variables = {
             "from_location": from_location,
             "to_location": to_location,
@@ -48,6 +53,9 @@ class PromptService:
             "stations_data": stations_text,
             "historical_routes": historical_text,
             "weather_conditions": weather_text,
+            "departure_time": departure_time,
+            "arrival_time": arrival_time,
+            "time_mode": time_mode,
             **kwargs,
         }
 
