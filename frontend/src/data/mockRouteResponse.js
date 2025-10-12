@@ -204,27 +204,31 @@ export const mockOptimizedRouteResponse = {
 
   recent_deliveries: [
     {
-      delivery_id: "delivery-001",
-      volume_liters: 25000,
-      delivery_date: "2025-10-10",
-      status: "completed",
-      station_name: "Kingston East",
-      truck_code: "TRK-001"
+      delivery_id: 1,
+      station: "Petro-Canada - Kingston East (PC-KE-001)",
+      location: "Kingston, Ontario",
+      volume: "25,000 L",
+      date: "2025-10-10",
+      status: "Completed",
+      truck: "TRK-001 (ON-T4567)",
+      coordinates: { lat: 44.2312, lon: -76.4860 }
     },
     {
-      delivery_id: "delivery-002",
-      volume_liters: 30000,
-      delivery_date: "2025-10-09",
-      status: "completed",
-      station_name: "Montreal West",
-      truck_code: "TRK-003"
+      delivery_id: 2,
+      station: "Ultramar - Montreal West (UM-MW-004)",
+      location: "Montreal, Quebec",
+      volume: "30,000 L",
+      date: "2025-10-09",
+      status: "Completed",
+      truck: "TRK-003 (QC-T5123)",
+      coordinates: { lat: 45.4642, lon: -73.6100 }
     }
   ],
 
   data_sources: {
-    stations_count: 5,
-    deliveries_count: 2,
-    trucks_count: 3,
+    database_stations: 5,
+    recent_deliveries: 2,
+    available_trucks: 3,
     weather_data: "included",
     ai_analysis: "included"
   },

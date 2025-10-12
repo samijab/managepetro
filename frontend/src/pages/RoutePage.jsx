@@ -6,6 +6,8 @@ import WeatherImpactCard from "../components/WeatherImpactCard";
 import TrafficConditionsCard from "../components/TrafficConditionsCard";
 import FuelStationsCard from "../components/FuelStationsCard";
 import AvailableTrucksCard from "../components/AvailableTrucksCard";
+import RecentDeliveriesCard from "../components/RecentDeliveriesCard";
+import DataSourcesCard from "../components/DataSourcesCard";
 import AIAnalysisCard from "../components/AIAnalysisCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -81,6 +83,22 @@ function RoutePage({ selectedLLM }) {
                 routeData.availableTrucks.length > 0 && (
                   <AvailableTrucksCard trucks={routeData.availableTrucks} />
                 )}
+            </div>
+
+            {/* Recent Deliveries and Data Sources Cards - 2 column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Deliveries Card */}
+              {routeData.recentDeliveries &&
+                routeData.recentDeliveries.length > 0 && (
+                  <RecentDeliveriesCard
+                    deliveries={routeData.recentDeliveries}
+                  />
+                )}
+
+              {/* Data Sources Card */}
+              {routeData.dataSources && (
+                <DataSourcesCard dataSources={routeData.dataSources} />
+              )}
             </div>
 
             {/* AI Analysis Card - Full width */}

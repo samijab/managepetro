@@ -5,6 +5,8 @@ import WeatherImpactCard from "../components/WeatherImpactCard";
 import TrafficConditionsCard from "../components/TrafficConditionsCard";
 import FuelStationsCard from "../components/FuelStationsCard";
 import AvailableTrucksCard from "../components/AvailableTrucksCard";
+import RecentDeliveriesCard from "../components/RecentDeliveriesCard";
+import DataSourcesCard from "../components/DataSourcesCard";
 import AIAnalysisCard from "../components/AIAnalysisCard";
 import { mockOptimizedRouteResponse } from "../data/mockRouteResponse";
 
@@ -53,8 +55,10 @@ function DemoRoutePage() {
         },
         trafficConditions: mockOptimizedRouteResponse.traffic_conditions,
         fuelStations: mockOptimizedRouteResponse.fuel_stations,
+        recentDeliveries: mockOptimizedRouteResponse.recent_deliveries,
         availableTrucks: mockOptimizedRouteResponse.available_trucks,
         aiAnalysis: mockOptimizedRouteResponse.ai_analysis,
+        dataSources: mockOptimizedRouteResponse.data_sources,
       }
     : null;
 
@@ -130,6 +134,17 @@ function DemoRoutePage() {
               <AvailableTrucksCard trucks={transformedData.availableTrucks} />
             </div>
 
+            {/* Recent Deliveries and Data Sources - 2 column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Deliveries Card */}
+              <RecentDeliveriesCard
+                deliveries={transformedData.recentDeliveries}
+              />
+
+              {/* Data Sources Card */}
+              <DataSourcesCard dataSources={transformedData.dataSources} />
+            </div>
+
             {/* AI Analysis Card - Full width */}
             <AIAnalysisCard
               aiAnalysis={transformedData.aiAnalysis}
@@ -161,6 +176,8 @@ function DemoRoutePage() {
                   <li>✓ Traffic Conditions Card - Traffic analysis and timing</li>
                   <li>✓ Fuel Stations Card - Nearby stations with inventory levels</li>
                   <li>✓ Available Trucks Card - Trucks ready for assignment</li>
+                  <li>✓ Recent Deliveries Card - Historical delivery data</li>
+                  <li>✓ Data Sources Card - Optimization data availability</li>
                   <li>✓ AI Analysis Card - Comprehensive AI-generated recommendations</li>
                 </ul>
               </div>
