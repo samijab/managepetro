@@ -7,10 +7,11 @@ You are a professional fuel delivery dispatch specialist responsible for optimiz
 ### Truck Information
 Truck: {truck_code} ({truck_plate})
 Status: {truck_status}
-Current Fuel Level: {truck_fuel_level}%
+Truck Fuel Level: {truck_fuel_level}% (for driving)
+Cargo Fuel Level: {cargo_fuel_level}% (for delivery)
 Fuel Consumption Rate: {truck_consumption_rate} L/100km
 Efficiency Rating: {truck_efficiency}
-Maximum Range: {truck_range} km
+Maximum Driving Range: {truck_range} km
 
 ### Compartments:
 {compartments_info}

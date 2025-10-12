@@ -182,20 +182,27 @@ class TruckData:
     id: int
     code: str
     plate: str
-    capacity_liters: int
-    fuel_level_percent: int
+    capacity_liters: int  # Cargo capacity (fuel to deliver)
+    fuel_level_percent: int  # Cargo fuel level
     fuel_type: str
     status: str
     compartments: Optional[List[Dict[str, Any]]] = None
     fuel_consumption_rate: Optional[float] = 35.0  # Liters per 100 km (default for heavy trucks)
-    max_range_km: Optional[float] = None  # Calculated from fuel level and consumption rate
+    truck_fuel_tank_liters: Optional[int] = 800  # Truck's own fuel tank (not cargo)
+    truck_fuel_level_percent: Optional[int] = 80  # Truck's own fuel level (not cargo)
     
-    def __post_init__(self):
-        """Calculate derived metrics"""
-        if self.max_range_km is None and self.fuel_consumption_rate:
-            # Calculate max range based on current fuel level
-            current_fuel = (self.capacity_liters * self.fuel_level_percent) / 100
-            self.max_range_km = (current_fuel / self.fuel_consumption_rate) * 100
+    @property
+    def max_range_km(self) -> float:
+        """Calculate truck's driving range based on its own fuel tank (not cargo)"""
+        if not self.fuel_consumption_rate or not self.truck_fuel_tank_liters:
+            return 0.0
+        current_fuel = (self.truck_fuel_tank_liters * self.truck_fuel_level_percent) / 100
+        return (current_fuel / self.fuel_consumption_rate) * 100
+    
+    @property
+    def cargo_fuel_liters(self) -> int:
+        """Calculate current cargo fuel in liters"""
+        return int((self.capacity_liters * self.fuel_level_percent) / 100)
     
     @property
     def efficiency_rating(self) -> str:
@@ -224,6 +231,7 @@ class TruckData:
             "fuel_consumption_rate": self.fuel_consumption_rate,
             "max_range_km": round(self.max_range_km, 1) if self.max_range_km else None,
             "efficiency_rating": self.efficiency_rating,
+            "cargo_fuel_liters": self.cargo_fuel_liters,
         }
 
 
