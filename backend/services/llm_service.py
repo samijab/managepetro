@@ -62,6 +62,40 @@ class LLMService:
             if conn and conn.is_connected():
                 conn.close()
 
+    def _extract_section(self, ai_response: str, section_name: str) -> str:
+        """
+        Helper method to extract a section from AI response
+        Returns the content between section_name and next ### marker
+        """
+        if section_name not in ai_response:
+            return ""
+        
+        section_content = ai_response.split(section_name)[1]
+        if "###" in section_content:
+            section_content = section_content.split("###")[0]
+        
+        return section_content.strip()
+
+    def _parse_key_value_lines(self, text: str, mappings: dict) -> dict:
+        """
+        Helper method to parse key-value pairs from text lines
+        mappings: dict of {search_key: result_key}
+        Example: {"Total Distance:": "total_distance"}
+        """
+        result = {}
+        lines = text.split("\n")
+        
+        for line in lines:
+            line = line.strip()
+            for search_key, result_key in mappings.items():
+                if search_key in line:
+                    value = line.split(":")[-1].strip()
+                    if value:  # Only add if not empty
+                        result[result_key] = value
+                    break  # Move to next line after finding a match
+        
+        return result
+
     async def optimize_route(
         self, from_location: str, to_location: str, llm_model: str = "gemini-2.5-flash"
     ) -> Dict[str, Any]:
@@ -567,77 +601,24 @@ class LLMService:
 
         try:
             # Look for ROUTE SUMMARY section
-            if "ROUTE SUMMARY" in ai_response:
-                summary_section = ai_response.split("ROUTE SUMMARY")[1]
-                if "###" in summary_section:
-                    summary_section = summary_section.split("###")[0]
-
-                lines = summary_section.strip().split("\n")
-                for line in lines:
-                    line = line.strip()
-
-                    # Parse all the different summary fields
-                    if "Total Distance:" in line:
-                        summary["total_distance"] = line.split("Total Distance:")[
-                            1
-                        ].strip()
-                    elif "Distance:" in line and "Total Distance:" not in line:
-                        summary["distance"] = line.split("Distance:")[1].strip()
-
-                    elif "Estimated Duration:" in line:
-                        summary["estimated_duration"] = line.split(
-                            "Estimated Duration:"
-                        )[1].strip()
-                    elif "Duration:" in line and "Estimated Duration:" not in line:
-                        summary["duration"] = line.split("Duration:")[1].strip()
-
-                    elif "Duration with Traffic:" in line:
-                        summary["duration_with_traffic"] = line.split(
-                            "Duration with Traffic:"
-                        )[1].strip()
-
-                    elif "Primary Route:" in line:
-                        summary["primary_route"] = line.split("Primary Route:")[
-                            1
-                        ].strip()
-                    elif "Route:" in line and "Primary Route:" not in line:
-                        summary["route"] = line.split("Route:")[1].strip()
-
-                    elif "Route Type:" in line:
-                        summary["route_type"] = line.split("Route Type:")[1].strip()
-
-                    elif "Weather Impact:" in line:
-                        summary["weather_impact"] = line.split("Weather Impact:")[
-                            1
-                        ].strip()
-
-                    elif "Fuel Stops Required:" in line:
-                        summary["fuel_stops"] = line.split("Fuel Stops Required:")[
-                            1
-                        ].strip()
-
-                    elif "Estimated Fuel Cost:" in line:
-                        summary["estimated_fuel_cost"] = line.split(
-                            "Estimated Fuel Cost:"
-                        )[1].strip()
-
-                    elif "Best Departure Time:" in line:
-                        summary["best_departure_time"] = line.split(
-                            "Best Departure Time:"
-                        )[1].strip()
-
-            # Add calculated fields if basic distance/duration found
-            if "distance" in summary or "total_distance" in summary:
-                distance_str = summary.get(
-                    "total_distance", summary.get("distance", "Unknown")
-                )
-                summary["distance_display"] = distance_str
-
-            if "duration" in summary or "estimated_duration" in summary:
-                duration_str = summary.get(
-                    "estimated_duration", summary.get("duration", "Unknown")
-                )
-                summary["duration_display"] = duration_str
+            summary_section = self._extract_section(ai_response, "ROUTE SUMMARY")
+            
+            if summary_section:
+                # Define mappings for key-value extraction
+                mappings = {
+                    "Total Distance:": "total_distance",
+                    "Estimated Duration:": "estimated_duration",
+                    "Duration with Traffic:": "duration_with_traffic",
+                    "Primary Route:": "primary_route",
+                    "Route Type:": "route_type",
+                    "Weather Impact:": "weather_impact",
+                    "Fuel Stops Required:": "fuel_stops",
+                    "Estimated Fuel Cost:": "estimated_fuel_cost",
+                    "Best Departure Time:": "best_departure_time",
+                }
+                
+                parsed = self._parse_key_value_lines(summary_section, mappings)
+                summary.update(parsed)
 
         except Exception as e:
             print(f"Error parsing route summary: {e}")
@@ -650,30 +631,18 @@ class LLMService:
 
         try:
             # Look for TRAFFIC CONDITIONS section
-            if "TRAFFIC CONDITIONS" in ai_response:
-                traffic_section = ai_response.split("TRAFFIC CONDITIONS")[1]
-                if "###" in traffic_section:
-                    traffic_section = traffic_section.split("###")[0]
-
-                lines = traffic_section.strip().split("\n")
-                for line in lines:
-                    line = line.strip()
-                    if "Current Traffic:" in line:
-                        traffic_info["current_traffic"] = line.split(
-                            "Current Traffic:"
-                        )[1].strip()
-                    elif "Typical Travel Time:" in line:
-                        traffic_info["typical_time"] = line.split(
-                            "Typical Travel Time:"
-                        )[1].strip()
-                    elif "Best Departure Time:" in line:
-                        traffic_info["best_departure"] = line.split(
-                            "Best Departure Time:"
-                        )[1].strip()
-                    elif "Expected Delays:" in line:
-                        traffic_info["delays"] = line.split("Expected Delays:")[
-                            1
-                        ].strip()
+            traffic_section = self._extract_section(ai_response, "TRAFFIC CONDITIONS")
+            
+            if traffic_section:
+                mappings = {
+                    "Current Traffic:": "current_traffic",
+                    "Typical Travel Time:": "typical_time",
+                    "Best Departure Time:": "best_departure",
+                    "Expected Delays:": "delays",
+                }
+                
+                parsed = self._parse_key_value_lines(traffic_section, mappings)
+                traffic_info.update(parsed)
 
         except Exception as e:
             print(f"Error parsing traffic info: {e}")
@@ -781,42 +750,35 @@ class LLMService:
     ) -> Dict[str, Any]:
         """Parse the AI response for dispatch optimization"""
         
-        # Extract dispatch summary
+        # Extract dispatch summary using helper
         dispatch_summary = {}
         try:
-            if "DISPATCH SUMMARY" in ai_response:
-                summary_section = ai_response.split("DISPATCH SUMMARY")[1]
-                if "###" in summary_section:
-                    summary_section = summary_section.split("###")[0]
+            summary_section = self._extract_section(ai_response, "DISPATCH SUMMARY")
+            
+            if summary_section:
+                mappings = {
+                    "Total Stations to Visit:": "total_stations",
+                    "Total Distance:": "total_distance",
+                    "Estimated Duration:": "estimated_duration",
+                    "Total Fuel to Deliver:": "total_fuel",
+                    "Departure Time:": "departure_time",
+                    "Return to Depot:": "return_time",
+                }
                 
-                for line in summary_section.strip().split("\n"):
-                    line = line.strip()
-                    if "Total Stations to Visit:" in line:
-                        dispatch_summary["total_stations"] = line.split(":")[1].strip()
-                    elif "Total Distance:" in line:
-                        dispatch_summary["total_distance"] = line.split(":")[1].strip()
-                    elif "Estimated Duration:" in line:
-                        dispatch_summary["estimated_duration"] = line.split(":")[1].strip()
-                    elif "Total Fuel to Deliver:" in line:
-                        dispatch_summary["total_fuel"] = line.split(":")[1].strip()
-                    elif "Departure Time:" in line:
-                        dispatch_summary["departure_time"] = line.split(":")[1].strip()
-                    elif "Return to Depot:" in line:
-                        dispatch_summary["return_time"] = line.split(":")[1].strip()
+                dispatch_summary = self._parse_key_value_lines(summary_section, mappings)
         except Exception as e:
             print(f"Error parsing dispatch summary: {e}")
 
         # Extract route stops
         route_stops = []
         try:
-            if "OPTIMIZED ROUTE" in ai_response:
-                route_section = ai_response.split("OPTIMIZED ROUTE")[1]
-                if "###" in route_section:
-                    route_section = route_section.split("###")[0]
-                
+            route_section = self._extract_section(ai_response, "OPTIMIZED ROUTE")
+            
+            if route_section:
                 # Parse numbered route items
-                lines = route_section.strip().split("\n")
+                lines = route_section.split("\n")
                 current_stop = {}
+                
                 for line in lines:
                     line = line.strip()
                     if line and line[0].isdigit() and "." in line:
@@ -827,13 +789,13 @@ class LLMService:
                         station_info = line.split(".", 1)[1].strip()
                         current_stop = {"station": station_info}
                     elif "Distance from previous:" in line:
-                        current_stop["distance"] = line.split(":")[1].strip()
+                        current_stop["distance"] = line.split(":")[-1].strip()
                     elif "Fuel to deliver:" in line:
-                        current_stop["fuel_delivery"] = line.split(":")[1].strip()
+                        current_stop["fuel_delivery"] = line.split(":")[-1].strip()
                     elif "ETA:" in line:
-                        current_stop["eta"] = line.split(":")[1].strip()
+                        current_stop["eta"] = line.split(":")[-1].strip()
                     elif "Reason:" in line:
-                        current_stop["reason"] = line.split(":")[1].strip()
+                        current_stop["reason"] = line.split(":")[-1].strip()
                 
                 # Add last stop
                 if current_stop:
