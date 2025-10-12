@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
+from typing import Tuple
 
 # Import your services
 from services.llm_service import LLMService
@@ -14,6 +15,20 @@ app = FastAPI(
 
 # Initialize services
 llm_service = LLMService()
+
+
+def create_coordinate_tuple(lat: float, lon: float) -> Tuple[float, float]:
+    """
+    Helper function to create coordinate tuples
+    
+    Args:
+        lat: Latitude value
+        lon: Longitude value
+        
+    Returns:
+        Tuple of (lat, lon)
+    """
+    return (lat, lon)
 
 
 # Pydantic models for request/response (Updated for Pydantic v2)
@@ -111,8 +126,8 @@ def get_weather_info(request: WeatherRequest):
 def calculate_tomtom_route(request: TomTomRouteRequest):
     """Calculate route using TomTom API"""
     try:
-        origin = (request.origin_lat, request.origin_lon)
-        destination = (request.dest_lat, request.dest_lon)
+        origin = create_coordinate_tuple(request.origin_lat, request.origin_lon)
+        destination = create_coordinate_tuple(request.dest_lat, request.dest_lon)
 
         route_data = calculate_route(
             origin=origin,
@@ -132,7 +147,7 @@ def calculate_tomtom_route(request: TomTomRouteRequest):
 def calculate_range(request: ReachableRangeRequest):
     """Calculate reachable range using TomTom API"""
     try:
-        origin = (request.origin_lat, request.origin_lon)
+        origin = create_coordinate_tuple(request.origin_lat, request.origin_lon)
 
         range_data = calculate_reachable_range(
             origin=origin,

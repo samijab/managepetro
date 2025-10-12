@@ -5,6 +5,17 @@ const USE_MOCK_DATA =
   import.meta.env.VITE_USE_MOCK_DATA === "true" || import.meta.env.DEV;
 
 /**
+ * Helper function to handle mock data with simulated delay
+ * @param {Function} mockDataFetcher - Function that returns mock data
+ * @param {number} delay - Delay in milliseconds (default: 1000)
+ * @returns {Promise} Mock data after delay
+ */
+async function getMockData(mockDataFetcher, delay = 1000) {
+  await new Promise((resolve) => setTimeout(resolve, delay));
+  return mockDataFetcher();
+}
+
+/**
  * Service for route optimization operations
  */
 class RouteService {
@@ -72,16 +83,13 @@ class RouteService {
    */
   async calculateRoute(from, to, llmModel = "gpt-4") {
     if (USE_MOCK_DATA) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      return {
+      return getMockData(() => ({
         ...mockRouteData,
         from,
         to,
         llmModel,
         calculatedAt: new Date().toISOString(),
-      };
+      }));
     }
 
     // Real API call
@@ -107,8 +115,10 @@ class RouteService {
    */
   async getAvailableTrucks() {
     if (USE_MOCK_DATA) {
-      const { mockTrucks } = await import("../data/mockData");
-      return mockTrucks;
+      return getMockData(async () => {
+        const { mockTrucks } = await import("../data/mockData");
+        return mockTrucks;
+      });
     }
 
     return Api.getTrucks();
@@ -120,8 +130,10 @@ class RouteService {
    */
   async getStationsNeedingFuel() {
     if (USE_MOCK_DATA) {
-      const { mockStations } = await import("../data/mockData");
-      return mockStations;
+      return getMockData(async () => {
+        const { mockStations } = await import("../data/mockData");
+        return mockStations;
+      });
     }
 
     return Api.getStations();

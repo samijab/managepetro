@@ -2,17 +2,22 @@ import { useState } from "react";
 import routeService from "../services/routeService";
 
 /**
+ * Initial state for route data
+ */
+const INITIAL_ROUTE_STATE = {
+  from: "",
+  to: "",
+  eta: null,
+  instructions: [],
+  isLoading: false,
+  error: null,
+};
+
+/**
  * Custom hook for managing route calculation state
  */
 export function useRouteData() {
-  const [routeData, setRouteData] = useState({
-    from: "",
-    to: "",
-    eta: null,
-    instructions: [],
-    isLoading: false,
-    error: null,
-  });
+  const [routeData, setRouteData] = useState(INITIAL_ROUTE_STATE);
 
   const calculateRoute = async (from, to, llmModel) => {
     setRouteData((prev) => ({
@@ -42,14 +47,7 @@ export function useRouteData() {
   };
 
   const clearRoute = () => {
-    setRouteData({
-      from: "",
-      to: "",
-      eta: null,
-      instructions: [],
-      isLoading: false,
-      error: null,
-    });
+    setRouteData(INITIAL_ROUTE_STATE);
   };
 
   return {
