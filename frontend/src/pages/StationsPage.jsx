@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import DynamicTable from "../components/DynamicTable";
+import StatCard from "../components/StatCard";
 import { mockStations } from "../data/mockData";
+import {
+  getFuelLevelColor,
+  getPriorityColor,
+  filterStationsByFuelLevel,
+  filterStationsByPriority,
+  FUEL_THRESHOLDS,
+} from "../utils/fuelUtils";
 
 function StationsPage() {
   const [stations, setStations] = useState([]);
@@ -32,13 +40,7 @@ function StationsPage() {
         <div className="flex items-center space-x-2">
           <div className="w-20 bg-gray-200 rounded-full h-2">
             <div
-              className={`h-2 rounded-full ${
-                value >= 70
-                  ? "bg-green-500"
-                  : value >= 30
-                  ? "bg-yellow-500"
-                  : "bg-red-500"
-              }`}
+              className={`h-2 rounded-full ${getFuelLevelColor(value)}`}
               style={{ width: `${value}%` }}
             />
           </div>
@@ -50,20 +52,13 @@ function StationsPage() {
       key: "priority",
       label: "Priority",
       sortable: true,
-      render: (value) => {
-        const priorityColors = {
-          High: "bg-red-100 text-red-800",
-          Medium: "bg-yellow-100 text-yellow-800",
-          Low: "bg-green-100 text-green-800",
-        };
-        return (
-          <span
-            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${priorityColors[value]}`}
-          >
-            {value}
-          </span>
-        );
-      },
+      render: (value) => (
+        <span
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(value)}`}
+        >
+          {value}
+        </span>
+      ),
     },
     {
       key: "city",
@@ -129,77 +124,45 @@ function StationsPage() {
         <div className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-lg">⛽</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Total Stations
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {stations.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-red-600 font-bold text-lg">!</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      High Priority Stations
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {stations.filter((s) => s.priority === "High").length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <span className="text-yellow-600 font-bold text-lg">⚠</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Low Fuel Stations
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {stations.filter((s) => s.fuel_level < 30).length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-green-600 font-bold text-lg">✓</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Well Stocked Stations
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {stations.filter((s) => s.fuel_level >= 70).length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StatCard
+              icon="⛽"
+              iconBgColor="bg-blue-100"
+              iconTextColor="text-blue-600"
+              label="Total Stations"
+              value={stations.length}
+            />
+            <StatCard
+              icon="!"
+              iconBgColor="bg-red-100"
+              iconTextColor="text-red-600"
+              label="High Priority Stations"
+              value={filterStationsByPriority(stations, "High").length}
+            />
+            <StatCard
+              icon="⚠"
+              iconBgColor="bg-yellow-100"
+              iconTextColor="text-yellow-600"
+              label="Low Fuel Stations"
+              value={
+                filterStationsByFuelLevel(
+                  stations,
+                  FUEL_THRESHOLDS.LOW_FUEL,
+                  "<"
+                ).length
+              }
+            />
+            <StatCard
+              icon="✓"
+              iconBgColor="bg-green-100"
+              iconTextColor="text-green-600"
+              label="Well Stocked Stations"
+              value={
+                filterStationsByFuelLevel(
+                  stations,
+                  FUEL_THRESHOLDS.WELL_STOCKED
+                ).length
+              }
+            />
           </div>
 
           {/* Stations Table */}

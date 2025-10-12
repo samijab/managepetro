@@ -34,7 +34,7 @@ function RoutePage({ selectedLLM }) {
 
         {error && <ErrorMessage message={error} onDismiss={clearRoute} />}
 
-        {isLoading && <LoadingSpinner />}
+        {isLoading && <LoadingSpinner message="Calculating optimal route..." />}
 
         {routeData.eta && !isLoading && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

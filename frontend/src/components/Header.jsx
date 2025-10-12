@@ -6,6 +6,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import managePetroLogo from "../assets/manage-petro-logo.png";
+import NavLink from "./NavLink";
+import LLMOptionButton from "./LLMOptionButton";
 
 const llmOptions = [
   { value: "gpt-4", label: "GPT-4" },
@@ -61,26 +63,8 @@ function Header({ selectedLLM, onLLMChange }) {
             {/* Center Section - Navigation (Fixed position) */}
             <div className="hidden lg:flex items-center justify-center flex-1">
               <nav className="flex items-center space-x-6">
-                <Link
-                  to="/"
-                  className={`text-lg font-medium transition-colors ${
-                    location.pathname === "/"
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Route Optimization
-                </Link>
-                <Link
-                  to="/stations"
-                  className={`text-lg font-medium transition-colors ${
-                    location.pathname === "/stations"
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Stations
-                </Link>
+                <NavLink to="/">Route Optimization</NavLink>
+                <NavLink to="/stations">Stations</NavLink>
               </nav>
             </div>
 
@@ -107,20 +91,15 @@ function Header({ selectedLLM, onLLMChange }) {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                       {llmOptions.map((option) => (
-                        <button
+                        <LLMOptionButton
                           key={option.value}
+                          option={option}
+                          isSelected={selectedLLM === option.value}
                           onClick={() => {
                             onLLMChange(option.value);
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                            selectedLLM === option.value
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {option.label}
-                        </button>
+                        />
                       ))}
                     </div>
                   </div>
@@ -147,28 +126,12 @@ function Header({ selectedLLM, onLLMChange }) {
           <div className="lg:hidden border-t border-gray-200 bg-white">
             <div className="px-4 pt-2 pb-3 space-y-1">
               {/* Mobile Navigation Links */}
-              <Link
-                to="/"
-                onClick={closeMobileMenu}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  location.pathname === "/"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
+              <NavLink to="/" onClick={closeMobileMenu} mobile>
                 Route Optimization
-              </Link>
-              <Link
-                to="/stations"
-                onClick={closeMobileMenu}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  location.pathname === "/stations"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
+              </NavLink>
+              <NavLink to="/stations" onClick={closeMobileMenu} mobile>
                 Stations
-              </Link>
+              </NavLink>
 
               {/* Mobile LLM Dropdown */}
               {currentPageConfig.showLLMDropdown && (
@@ -178,20 +141,16 @@ function Header({ selectedLLM, onLLMChange }) {
                   </div>
                   <div className="space-y-1">
                     {llmOptions.map((option) => (
-                      <button
+                      <LLMOptionButton
                         key={option.value}
+                        option={option}
+                        isSelected={selectedLLM === option.value}
                         onClick={() => {
                           onLLMChange(option.value);
                           closeMobileMenu();
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          selectedLLM === option.value
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
+                        mobile
+                      />
                     ))}
                   </div>
                 </div>
