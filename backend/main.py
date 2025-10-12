@@ -32,6 +32,15 @@ class RouteRequest(BaseModel):
     use_ai_optimization: bool = Field(
         default=True, description="Enable AI-powered optimization"
     )
+    departure_time: str | None = Field(
+        default=None, description="Desired departure time (ISO format or HH:MM)"
+    )
+    arrival_time: str | None = Field(
+        default=None, description="Desired arrival time (ISO format or HH:MM)"
+    )
+    time_mode: str = Field(
+        default="departure", pattern="^(departure|arrival)$", description="Time optimization mode"
+    )
 
 
 class WeatherRequest(BaseModel):
@@ -84,7 +93,12 @@ async def optimize_route_ai(request: RouteRequest):
         if request.use_ai_optimization:
             # Use AI service with markdown refinement
             result = await llm_service.optimize_route(
-                request.from_location, request.to_location, request.llm_model
+                request.from_location,
+                request.to_location,
+                request.llm_model,
+                departure_time=request.departure_time,
+                arrival_time=request.arrival_time,
+                time_mode=request.time_mode,
             )
             return result
         else:

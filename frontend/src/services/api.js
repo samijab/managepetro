@@ -263,6 +263,8 @@ const Api = {
       eta: {
         duration: routeSummary.estimated_duration || "N/A",
         distance: routeSummary.total_distance || "N/A",
+        recommendedArrival: routeSummary.recommended_arrival_time || null,
+        recommendedDeparture: routeSummary.best_departure_time || null,
       },
       instructions: directions.map((step, index) => ({
         id: step.step_id || step.step || index + 1,
@@ -277,6 +279,7 @@ const Api = {
         primaryRoute: routeSummary.primary_route || "N/A",
         routeType: routeSummary.route_type || "N/A",
         bestDepartureTime: routeSummary.best_departure_time || "N/A",
+        recommendedArrivalTime: routeSummary.recommended_arrival_time || "N/A",
         weatherImpact: routeSummary.weather_impact || "N/A",
         fuelStops: routeSummary.fuel_stops || "N/A",
         estimatedFuelCost: routeSummary.estimated_fuel_cost || "N/A",

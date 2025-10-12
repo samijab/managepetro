@@ -116,12 +116,15 @@ export function useOptimizeDispatch() {
  */
 export function useOptimizeRoute() {
   return useMutation({
-    mutationFn: ({ from, to, llmModel }) =>
+    mutationFn: ({ from, to, llmModel, timeData = {} }) =>
       Api.post("/routes/optimize", {
         from_location: from,
         to_location: to,
         llm_model: llmModel,
         use_ai_optimization: true,
+        departure_time: timeData.departureTime || null,
+        arrival_time: timeData.arrivalTime || null,
+        time_mode: timeData.timeMode || "departure",
       }),
   });
 }

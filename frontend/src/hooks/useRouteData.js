@@ -23,9 +23,9 @@ export function useRouteData() {
 
   const optimizeRouteMutation = useOptimizeRoute();
 
-  const calculateRoute = async (from, to, llmModel) => {
+  const calculateRoute = async (from, to, llmModel, timeData = {}) => {
     optimizeRouteMutation.mutate(
-      { from, to, llmModel },
+      { from, to, llmModel, timeData },
       {
         onSuccess: (result) => {
           const transformedData = Api.transformRouteResponse(result);
