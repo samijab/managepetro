@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ChevronDownIcon,
   Bars3Icon,
   XMarkIcon,
+  UserIcon,
+  ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import managePetroLogo from "../assets/manage-petro-logo.png";
 
 const llmOptions = [
@@ -26,16 +29,31 @@ const pageConfig = {
 function Header({ selectedLLM, onLLMChange }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const currentPageConfig = pageConfig[location.pathname] || pageConfig["/"];
   const selectedOption = llmOptions.find(
     (option) => option.value === selectedLLM
   );
 
-  const closeMobileMenu = () => {
+  const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
-  };
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    setIsUserMenuOpen(false);
+  }, [logout]);
+
+  const handleLLMChange = useCallback(
+    (value) => {
+      onLLMChange(value);
+      setIsDropdownOpen(false);
+    },
+    [onLLMChange]
+  );
 
   return (
     <>
@@ -121,10 +139,7 @@ function Header({ selectedLLM, onLLMChange }) {
                       {llmOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => {
-                            onLLMChange(option.value);
-                            setIsDropdownOpen(false);
-                          }}
+                          onClick={() => handleLLMChange(option.value)}
                           className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
                             selectedLLM === option.value
                               ? "bg-blue-50 text-blue-600 font-medium"
@@ -134,6 +149,37 @@ function Header({ selectedLLM, onLLMChange }) {
                           {option.label}
                         </button>
                       ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Menu */}
+              <div className="hidden sm:block relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
+                >
+                  <UserIcon className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {user?.username || "User"}
+                  </span>
+                  <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                        {user?.email}
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
+                        <span>Sign out</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -204,7 +250,7 @@ function Header({ selectedLLM, onLLMChange }) {
                       <button
                         key={option.value}
                         onClick={() => {
-                          onLLMChange(option.value);
+                          handleLLMChange(option.value);
                           closeMobileMenu();
                         }}
                         className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
@@ -219,6 +265,29 @@ function Header({ selectedLLM, onLLMChange }) {
                   </div>
                 </div>
               )}
+
+              {/* Mobile User Menu */}
+              <div className="px-3 py-2 border-t border-gray-100 mt-2">
+                <div className="text-sm font-medium text-gray-500 mb-2">
+                  Account
+                </div>
+                <div className="space-y-1">
+                  <div className="px-3 py-2 text-sm text-gray-600">
+                    <div className="font-medium">{user?.username}</div>
+                    <div className="text-gray-500">{user?.email}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      closeMobileMenu();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

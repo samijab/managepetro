@@ -16,6 +16,35 @@ const api = axios.create({
   timeout: 120000, // 120 seconds to handle long-running route optimization
 });
 
+// Add auth token to requests automatically
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      // Redirect to login will be handled by AuthGuard
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Custom API error with optional HTTP status and response data.
  * @typedef {Error & { status?: number, data?: any }} ApiError
@@ -241,10 +270,10 @@ const Api = {
 
   /**
    * Transform API response to standardized frontend format.
-   * 
+   *
    * This is the single transformation layer between backend API and frontend.
    * If backend data structure changes, update this method accordingly.
-   * 
+   *
    * @param {RouteOptimizationResponse} apiData - Raw API response
    * @returns {TransformedRouteData} Standardized route data for frontend
    */
@@ -270,7 +299,9 @@ const Api = {
         id: step.step_id || step.step || index + 1,
         text: step.instruction || step.text || "Continue on route",
         distance: step.distance || "N/A",
-        direction_type: step.direction_type || Api.extractDirectionType(step.instruction || ""),
+        direction_type:
+          step.direction_type ||
+          Api.extractDirectionType(step.instruction || ""),
         compass_direction: step.compass_direction || step.bearing || null,
       })),
       routeSummary: {
@@ -303,7 +334,7 @@ const Api = {
   /**
    * Calculate optimized route between two locations.
    * This method handles both the API call and transformation.
-   * 
+   *
    * @param {string} from - Starting location
    * @param {string} to - Destination location
    * @param {string} [llmModel="gemini-2.5-flash"] - Selected LLM model
@@ -322,7 +353,7 @@ const Api = {
   /**
    * Transform dispatch optimization API response to standardized format.
    * Ensures all backend data is properly consumed by the frontend.
-   * 
+   *
    * @param {Object} apiData - Raw dispatch API response
    * @returns {Object} Standardized dispatch data
    */
