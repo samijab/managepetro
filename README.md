@@ -39,7 +39,7 @@ AI-powered fuel delivery management system with React frontend and Python backen
 
 ### Step 2: Start the Database
 
-**📍 Where to run:** Inside the "ISSP Project" folder you just created
+**📍 Where to run:** Navigate to the backend folder first
 
 1. **Navigate to backend folder:**
    ```bash
@@ -57,7 +57,7 @@ AI-powered fuel delivery management system with React frontend and Python backen
 
 ### Step 3: Get Your API Keys (Free!)
 
-**📍 Where to run:** Still in the backend folder
+**📍 Where to run:** Make sure you're in the backend folder (run `cd backend` if needed)
 
 1. **Copy the template file:**
 
@@ -83,7 +83,7 @@ AI-powered fuel delivery management system with React frontend and Python backen
 
 ### Step 4: Setup Backend (Python)
 
-**📍 Where to run:** Still in the backend folder
+**📍 Where to run:** Make sure you're in the backend folder (run `cd backend` if needed)
 
 ```bash
 pip install -r requirements.txt
@@ -94,9 +94,9 @@ pip install -r requirements.txt
 
 ### Step 5: Setup Frontend (React)
 
-**📍 Where to run:** Need to navigate to frontend folder
+**📍 Where to run:** Navigate to the frontend folder
 
-1. **Go back to project root, then frontend:**
+1. **Go back to project root, then to frontend:**
 
    ```bash
    cd ..          # Go back to "ISSP Project" folder
@@ -116,10 +116,11 @@ pip install -r requirements.txt
 
 ### Terminal 1: Database
 
-**📍 Where to run:** Navigate to backend folder
+**📍 Where to run:** Open a terminal and navigate to the backend folder
 
 ```bash
-cd backend                    # From "ISSP Project" folder
+cd "ISSP Project"             # Navigate to your project folder first
+cd backend                    # Then go into backend folder
 docker compose up -d         # Starts database in background
 ```
 
@@ -127,10 +128,11 @@ docker compose up -d         # Starts database in background
 
 ### Terminal 2: Backend Server
 
-**📍 Where to run:** Same backend folder (open a new terminal)
+**📍 Where to run:** Open a NEW terminal and navigate to the backend folder
 
 ```bash
-cd backend                    # Navigate here in new terminal
+cd "ISSP Project"             # Navigate to your project folder first
+cd backend                    # Then go into backend folder
 fastapi dev main.py          # Starts Python server
 ```
 
@@ -139,10 +141,11 @@ fastapi dev main.py          # Starts Python server
 
 ### Terminal 3: Frontend App
 
-**📍 Where to run:** Frontend folder (open a 3rd terminal)
+**📍 Where to run:** Open a THIRD terminal and navigate to the frontend folder
 
 ```bash
-cd frontend                   # Navigate here in new terminal
+cd "ISSP Project"             # Navigate to your project folder first
+cd frontend                   # Then go into frontend folder
 npm run dev                   # Starts React app
 ```
 
@@ -165,10 +168,11 @@ You should see the Manage Petro application! 🎉
 
 ### "Docker compose command not found" or database won't start
 
-**📍 Run in backend folder:**
+**📍 Navigate to backend folder first:**
 
 ```bash
-cd backend
+cd "ISSP Project"       # Go to your project folder
+cd backend              # Then go into backend folder
 docker compose down    # Stop any running database
 docker compose up -d   # Start fresh
 ```
@@ -177,10 +181,11 @@ docker compose up -d   # Start fresh
 
 ### "ModuleNotFoundError" or "pip not found"
 
-**📍 Run in backend folder:**
+**📍 Navigate to backend folder first:**
 
 ```bash
-cd backend
+cd "ISSP Project"                # Go to your project folder
+cd backend                       # Then go into backend folder
 pip install -r requirements.txt
 ```
 
@@ -188,10 +193,11 @@ pip install -r requirements.txt
 
 ### "npm not found" or frontend errors
 
-**📍 Run in frontend folder:**
+**📍 Navigate to frontend folder first:**
 
 ```bash
-cd frontend
+cd "ISSP Project"        # Go to your project folder
+cd frontend              # Then go into frontend folder
 npm install
 ```
 
@@ -216,10 +222,11 @@ npm install
 
 ### Nothing works / "I'm completely lost"
 
-**📍 Nuclear option - start completely over:**
+**📍 Nuclear option - navigate to backend folder and start completely over:**
 
 ```bash
-cd backend
+cd "ISSP Project"              # Go to your project folder
+cd backend                     # Then go into backend folder
 docker compose down -v        # Delete everything
 docker compose up -d          # Start fresh with new data
 pip install -r requirements.txt
@@ -242,11 +249,12 @@ ISSP Project/
 
 ## Daily Development Workflow (For Making Changes)
 
-**📍 Always run these commands from the main "ISSP Project" folder**
+**📍 Navigate to your main "ISSP Project" folder first, then run these commands**
 
 ### Before You Start Working Each Day:
 
 ```bash
+cd "ISSP Project"              # Navigate to your project folder
 git checkout devmain           # Switch to main branch
 git pull origin devmain        # Get latest changes from team
 ```
