@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-import os
 import mysql.connector
 from mysql.connector import Error as MySQLError
 from contextlib import contextmanager
@@ -60,11 +59,11 @@ class LLMService:
         """
         if section_name not in ai_response:
             return ""
-        
+
         section_content = ai_response.split(section_name)[1]
         if "###" in section_content:
             section_content = section_content.split("###")[0]
-        
+
         return section_content.strip()
 
     def _clean_markdown(self, text: str) -> str:
@@ -74,21 +73,21 @@ class LLMService:
         """
         if not text:
             return text
-        
+
         import re
-        
+
         cleaned = text
         # Remove bold markdown (**text**)
-        cleaned = re.sub(r'\*\*(.+?)\*\*', r'\1', cleaned)
+        cleaned = re.sub(r"\*\*(.+?)\*\*", r"\1", cleaned)
         # Remove italic markdown (*text* but not ** which is already handled)
-        cleaned = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'\1', cleaned)
+        cleaned = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"\1", cleaned)
         # Remove underline markdown (__text__ and _text_)
-        cleaned = re.sub(r'__(.+?)__', r'\1', cleaned)
-        cleaned = re.sub(r'_(.+?)_', r'\1', cleaned)
+        cleaned = re.sub(r"__(.+?)__", r"\1", cleaned)
+        cleaned = re.sub(r"_(.+?)_", r"\1", cleaned)
         # Remove standalone ** or * that weren't part of pairs
-        cleaned = re.sub(r'\*\*', '', cleaned)
-        cleaned = re.sub(r'(?<!\w)\*(?!\w)', '', cleaned)
-        
+        cleaned = re.sub(r"\*\*", "", cleaned)
+        cleaned = re.sub(r"(?<!\w)\*(?!\w)", "", cleaned)
+
         return cleaned.strip()
 
     def _parse_key_value_lines(self, text: str, mappings: dict) -> dict:
@@ -99,7 +98,7 @@ class LLMService:
         """
         result = {}
         lines = text.split("\n")
-        
+
         for line in lines:
             line = line.strip()
             for search_key, result_key in mappings.items():
@@ -112,7 +111,7 @@ class LLMService:
                             # Clean markdown formatting from the value
                             result[result_key] = self._clean_markdown(value)
                     break  # Move to next line after finding a match
-        
+
         return result
 
     async def optimize_route(
@@ -165,7 +164,7 @@ class LLMService:
 
             # Get stations needing fuel
             stations_needing_fuel = self._get_stations_needing_refuel()
-            
+
             # Get weather for depot location
             try:
                 depot_weather = get_weather(depot_location)
@@ -327,7 +326,7 @@ class LLMService:
                     """
                     cursor.execute(trucks_query)
                     trucks_raw = cursor.fetchall()
-                    
+
                     trucks = []
                     for truck_row in trucks_raw:
                         # Get compartments for this truck
@@ -337,12 +336,12 @@ class LLMService:
                             WHERE truck_id = %s
                             ORDER BY compartment_number
                         """
-                        cursor.execute(compartments_query, (truck_row['id'],))
+                        cursor.execute(compartments_query, (truck_row["id"],))
                         compartments = cursor.fetchall()
-                        
+
                         truck = TruckData(**truck_row, compartments=compartments)
                         trucks.append(truck)
-                    
+
                     conn.commit()
                     return trucks
                 except MySQLError as e:
@@ -356,7 +355,7 @@ class LLMService:
             return []
 
     async def _call_gemini(self, prompt: str, model: str) -> str:
-        """Make the actual Gemini API call"""
+        """Make the actual Gemini API call with proper error handling"""
         try:
             response = await self.client.aio.models.generate_content(
                 model=model,
@@ -370,8 +369,23 @@ class LLMService:
             return response.text
 
         except Exception as e:
-            print(f"Gemini API call failed: {e}")
-            raise e
+            error_msg = str(e)
+            if (
+                "quota" in error_msg.lower()
+                or "resource_exhausted" in error_msg.lower()
+            ):
+                print(f"Gemini API quota exceeded: {e}")
+                raise Exception(
+                    "Gemini API quota exceeded. Please check your API limits or wait before retrying."
+                )
+            elif "not_found" in error_msg.lower():
+                print(f"Gemini model not found: {e}")
+                raise Exception(
+                    f"Model '{model}' not found. Please check if the model name is correct."
+                )
+            else:
+                print(f"Gemini API call failed: {e}")
+                raise e
 
     def _parse_comprehensive_response(
         self,
@@ -420,9 +434,7 @@ class LLMService:
                 "duration_with_traffic", "See AI analysis"
             ),
             # Route details
-            "primary_route": route_summary.get(
-                "primary_route", "AI Optimized Route"
-            ),
+            "primary_route": route_summary.get("primary_route", "AI Optimized Route"),
             "route_type": route_summary.get("route_type", "AI Optimized"),
             # Timing and conditions
             "best_departure_time": route_summary.get(
@@ -435,9 +447,7 @@ class LLMService:
                 "weather_impact", f"Current: {weather_data.from_location.condition}"
             ),
             # Fuel planning
-            "fuel_stops": route_summary.get(
-                "fuel_stops", "See fuel stations section"
-            ),
+            "fuel_stops": route_summary.get("fuel_stops", "See fuel stations section"),
             "estimated_fuel_cost": route_summary.get(
                 "estimated_fuel_cost", "Calculated by AI"
             ),
@@ -625,7 +635,7 @@ class LLMService:
         try:
             # Look for ROUTE SUMMARY section
             summary_section = self._extract_section(ai_response, "ROUTE SUMMARY")
-            
+
             if summary_section:
                 # Define mappings for key-value extraction
                 mappings = {
@@ -640,7 +650,7 @@ class LLMService:
                     "Best Departure Time:": "best_departure_time",
                     "Recommended Arrival Time:": "recommended_arrival_time",
                 }
-                
+
                 parsed = self._parse_key_value_lines(summary_section, mappings)
                 summary.update(parsed)
 
@@ -656,7 +666,7 @@ class LLMService:
         try:
             # Look for TRAFFIC CONDITIONS section
             traffic_section = self._extract_section(ai_response, "TRAFFIC CONDITIONS")
-            
+
             if traffic_section:
                 mappings = {
                     "Current Traffic:": "current_traffic",
@@ -664,7 +674,7 @@ class LLMService:
                     "Best Departure Time:": "best_departure",
                     "Expected Delays:": "delays",
                 }
-                
+
                 parsed = self._parse_key_value_lines(traffic_section, mappings)
                 traffic_info.update(parsed)
 
@@ -693,10 +703,10 @@ class LLMService:
                     """
                     cursor.execute(truck_query, (numeric_id,))
                     truck_row = cursor.fetchone()
-                    
+
                     if not truck_row:
                         return None
-                    
+
                     # Get compartments
                     compartments_query = """
                         SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
@@ -704,9 +714,9 @@ class LLMService:
                         WHERE truck_id = %s
                         ORDER BY compartment_number
                     """
-                    cursor.execute(compartments_query, (truck_row['id'],))
+                    cursor.execute(compartments_query, (truck_row["id"],))
                     compartments = cursor.fetchall()
-                    
+
                     truck = TruckData(**truck_row, compartments=compartments)
                     conn.commit()
                     return truck
@@ -773,12 +783,12 @@ class LLMService:
         depot_location: str,
     ) -> Dict[str, Any]:
         """Parse the AI response for dispatch optimization"""
-        
+
         # Extract dispatch summary using helper
         dispatch_summary = {}
         try:
             summary_section = self._extract_section(ai_response, "DISPATCH SUMMARY")
-            
+
             if summary_section:
                 mappings = {
                     "Total Stations to Visit:": "total_stations",
@@ -788,8 +798,10 @@ class LLMService:
                     "Departure Time:": "departure_time",
                     "Return to Depot:": "return_time",
                 }
-                
-                dispatch_summary = self._parse_key_value_lines(summary_section, mappings)
+
+                dispatch_summary = self._parse_key_value_lines(
+                    summary_section, mappings
+                )
         except Exception as e:
             print(f"Error parsing dispatch summary: {e}")
 
@@ -797,12 +809,12 @@ class LLMService:
         route_stops = []
         try:
             route_section = self._extract_section(ai_response, "OPTIMIZED ROUTE")
-            
+
             if route_section:
                 # Parse numbered route items
                 lines = route_section.split("\n")
                 current_stop = {}
-                
+
                 for line in lines:
                     line = line.strip()
                     if line and line[0].isdigit() and "." in line:
@@ -816,28 +828,38 @@ class LLMService:
                             station_info = self._clean_markdown(parts[1].strip())
                             current_stop = {
                                 "step_number": step_number,
-                                "station": station_info
+                                "station": station_info,
                             }
                         except (ValueError, IndexError):
                             # Fallback if step number parsing fails
-                            station_info = self._clean_markdown(line.split(".", 1)[1].strip())
+                            station_info = self._clean_markdown(
+                                line.split(".", 1)[1].strip()
+                            )
                             current_stop = {"station": station_info}
                     elif "Distance from previous:" in line:
-                        current_stop["distance"] = self._clean_markdown(line.split(":")[-1].strip())
+                        current_stop["distance"] = self._clean_markdown(
+                            line.split(":")[-1].strip()
+                        )
                     elif "Fuel to deliver:" in line:
-                        current_stop["fuel_delivery"] = self._clean_markdown(line.split(":")[-1].strip())
+                        current_stop["fuel_delivery"] = self._clean_markdown(
+                            line.split(":")[-1].strip()
+                        )
                     elif "ETA:" in line:
-                        current_stop["eta"] = self._clean_markdown(line.split(":")[-1].strip())
+                        current_stop["eta"] = self._clean_markdown(
+                            line.split(":")[-1].strip()
+                        )
                     elif "Reason:" in line:
-                        current_stop["reason"] = self._clean_markdown(line.split(":")[-1].strip())
-                
+                        current_stop["reason"] = self._clean_markdown(
+                            line.split(":")[-1].strip()
+                        )
+
                 # Add last stop
                 if current_stop:
                     route_stops.append(current_stop)
-                
+
                 # Sort stops by step_number to ensure correct order
                 route_stops.sort(key=lambda x: x.get("step_number", float("inf")))
-                
+
                 # Remove step_number from the output as it's only used for sorting
                 for stop in route_stops:
                     stop.pop("step_number", None)
@@ -864,7 +886,9 @@ class LLMService:
                     "fuel_type": s.fuel_type,
                     "current_level": s.current_level_liters,
                     "capacity": s.capacity_liters,
-                    "fuel_level_percent": int((s.current_level_liters / s.capacity_liters) * 100),
+                    "fuel_level_percent": int(
+                        (s.current_level_liters / s.capacity_liters) * 100
+                    ),
                     "request_method": s.request_method,
                     "needs_refuel": s.needs_refuel,
                     "lat": float(s.lat),
