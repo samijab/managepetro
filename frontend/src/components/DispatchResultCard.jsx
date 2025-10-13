@@ -39,7 +39,7 @@ function DispatchResultCard({ result, onClose }) {
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <div className="text-sm text-gray-600">Stations to Visit</div>
                   <div className="text-xl font-bold text-blue-600">
-                    {dispatch_summary.total_stations}
+                    {formatMarkdownForDisplay(String(dispatch_summary.total_stations))}
                   </div>
                 </div>
               )}
@@ -47,7 +47,7 @@ function DispatchResultCard({ result, onClose }) {
                 <div className="bg-green-50 p-3 rounded-lg">
                   <div className="text-sm text-gray-600">Total Distance</div>
                   <div className="text-xl font-bold text-green-600">
-                    {dispatch_summary.total_distance}
+                    {formatMarkdownForDisplay(String(dispatch_summary.total_distance))}
                   </div>
                 </div>
               )}
@@ -55,7 +55,7 @@ function DispatchResultCard({ result, onClose }) {
                 <div className="bg-purple-50 p-3 rounded-lg">
                   <div className="text-sm text-gray-600">Estimated Duration</div>
                   <div className="text-xl font-bold text-purple-600">
-                    {dispatch_summary.estimated_duration}
+                    {formatMarkdownForDisplay(String(dispatch_summary.estimated_duration))}
                   </div>
                 </div>
               )}
@@ -63,7 +63,7 @@ function DispatchResultCard({ result, onClose }) {
                 <div className="bg-orange-50 p-3 rounded-lg">
                   <div className="text-sm text-gray-600">Total Fuel Delivery</div>
                   <div className="text-xl font-bold text-orange-600">
-                    {dispatch_summary.total_fuel}
+                    {formatMarkdownForDisplay(String(dispatch_summary.total_fuel))}
                   </div>
                 </div>
               )}
@@ -76,7 +76,7 @@ function DispatchResultCard({ result, onClose }) {
                   <div>
                     <span className="text-gray-600">Departure Time:</span>
                     <span className="ml-2 font-medium text-gray-900">
-                      {dispatch_summary.departure_time}
+                      {formatMarkdownForDisplay(String(dispatch_summary.departure_time))}
                     </span>
                   </div>
                 )}
@@ -84,7 +84,7 @@ function DispatchResultCard({ result, onClose }) {
                   <div>
                     <span className="text-gray-600">Return to Depot:</span>
                     <span className="ml-2 font-medium text-gray-900">
-                      {dispatch_summary.return_time}
+                      {formatMarkdownForDisplay(String(dispatch_summary.return_time))}
                     </span>
                   </div>
                 )}
@@ -112,33 +112,33 @@ function DispatchResultCard({ result, onClose }) {
                     </div>
                     <div className="ml-3 flex-1">
                       <h4 className="font-semibold text-gray-900">
-                        {stop.station}
+                        {formatMarkdownForDisplay(String(stop.station))}
                       </h4>
                       <div className="mt-2 text-sm space-y-1">
                         {stop.distance && (
                           <div>
                             <span className="text-gray-600">Distance:</span>
-                            <span className="ml-2 text-gray-900">{stop.distance}</span>
+                            <span className="ml-2 text-gray-900">{formatMarkdownForDisplay(String(stop.distance))}</span>
                           </div>
                         )}
                         {stop.fuel_delivery && (
                           <div>
                             <span className="text-gray-600">Fuel to Deliver:</span>
                             <span className="ml-2 font-medium text-blue-600">
-                              {stop.fuel_delivery}
+                              {formatMarkdownForDisplay(String(stop.fuel_delivery))}
                             </span>
                           </div>
                         )}
                         {stop.eta && (
                           <div>
                             <span className="text-gray-600">ETA:</span>
-                            <span className="ml-2 text-gray-900">{stop.eta}</span>
+                            <span className="ml-2 text-gray-900">{formatMarkdownForDisplay(String(stop.eta))}</span>
                           </div>
                         )}
                         {stop.reason && (
                           <div>
                             <span className="text-gray-600">Reason:</span>
-                            <span className="ml-2 text-gray-700">{stop.reason}</span>
+                            <span className="ml-2 text-gray-700">{formatMarkdownForDisplay(String(stop.reason))}</span>
                           </div>
                         )}
                       </div>

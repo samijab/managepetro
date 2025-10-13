@@ -38,6 +38,10 @@ export function cleanMarkdown(text) {
   // Remove numbered list markers (1., 2., etc.)
   cleaned = cleaned.replace(/^[\s]*\d+\.\s+/gm, '');
 
+  // Remove standalone ** or * that weren't part of pairs
+  cleaned = cleaned.replace(/\*\*/g, '');
+  cleaned = cleaned.replace(/(?<!\w)\*(?!\w)/g, '');
+
   return cleaned.trim();
 }
 
