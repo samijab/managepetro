@@ -95,6 +95,9 @@ class LLMService:
         # Remove underline markdown (__text__ and _text_)
         cleaned = re.sub(r'__(.+?)__', r'\1', cleaned)
         cleaned = re.sub(r'_(.+?)_', r'\1', cleaned)
+        # Remove standalone ** or * that weren't part of pairs
+        cleaned = re.sub(r'\*\*', '', cleaned)
+        cleaned = re.sub(r'(?<!\w)\*(?!\w)', '', cleaned)
         
         return cleaned.strip()
 
