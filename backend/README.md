@@ -270,17 +270,64 @@ def _format_weather_data(self, weather):
 
 ## 🔧 Environment Variables
 
-Create `.env` file in backend directory:
+**IMPORTANT:** All API keys and database credentials must be configured via environment variables before running the application.
 
-```env
-# API Keys
-WEATHER_API_KEY=your_weather_api_key
-TOMTOM_API_KEY=your_tomtom_api_key
-gemenikey=your_gemini_api_key
+### Setup Instructions
 
-# Database (for production)
-DB_HOST=localhost
-DB_NAME=manage_petro
-DB_USER=mp_app
-DB_PASS=devpass
+1. **Copy the example file:**
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and fill in your actual values:**
+   ```env
+   # API Keys (Required)
+   WEATHER_API_KEY=your_actual_weather_api_key
+   TOMTOM_API_KEY=your_actual_tomtom_api_key
+   GEMINI_API_KEY=your_actual_gemini_api_key
+   
+   # Database Configuration (Required)
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_NAME=manage_petro
+   DB_USER=mp_app
+   DB_PASS=devpass
+   
+   # Optional
+   WEATHER_CITY=Vancouver
+   ```
+
+3. **Get your API keys:**
+   - **Weather API**: https://www.weatherapi.com/
+   - **TomTom Maps**: https://developer.tomtom.com/
+   - **Google Gemini**: https://makersuite.google.com/app/apikey
+
+### Configuration Validation
+
+The application will **fail immediately on startup** with a clear error message if any required environment variables are missing:
+
 ```
+======================================================================
+CONFIGURATION ERROR: Missing required environment variables
+======================================================================
+
+The following required environment variables are not set:
+  - WEATHER_API_KEY
+  - TOMTOM_API_KEY
+  - GEMINI_API_KEY
+
+To fix this issue:
+1. Create a .env file in the backend directory
+2. Copy the contents from .env.example
+3. Fill in your actual API keys and configuration values
+======================================================================
+```
+
+### Notes
+
+- **Never commit the `.env` file** - it's already in `.gitignore`
+- The `.env.example` file is a template and should be committed to version control
+- All configuration is centralized in `backend/config.py` for maintainability
+- Both `GEMINI_API_KEY` and `gemenikey` are supported for backward compatibility
+

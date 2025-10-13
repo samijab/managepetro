@@ -1,14 +1,7 @@
 import requests
-import os
-from dotenv import load_dotenv
 from typing import Tuple, Dict, Any, List, Optional
 from models.data_models import WeatherData
-
-
-load_dotenv()
-
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "d001fb8e247c4e4ab1b40950251010")
-TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "swR56X5HtTayLAASqunc560B2xErmQFq")
+from config import config
 
 
 def get_weather(city: str) -> WeatherData:
@@ -16,7 +9,7 @@ def get_weather(city: str) -> WeatherData:
     if city is None or not str(city).strip():
         raise ValueError("City parameter must not be None or empty.")
 
-    url = f"https://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={city}"
+    url = f"https://api.weatherapi.com/v1/current.json?key={config.WEATHER_API_KEY}&q={city}"
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -59,7 +52,7 @@ def calculate_route(
 
     # Prepare query parameters
     params = {
-        "key": TOMTOM_API_KEY,
+        "key": config.TOMTOM_API_KEY,
         "traffic": True,
         "routeType": "fastest",
     }
@@ -96,7 +89,7 @@ def calculate_reachable_range(
     url = f"{base_url}/{origin_str}/{content_type}"
 
     # Build query parameters
-    params = {"key": TOMTOM_API_KEY}
+    params = {"key": config.TOMTOM_API_KEY}
 
     # Set exactly one budget parameter
     if budget_type == "distance":

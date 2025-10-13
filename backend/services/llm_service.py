@@ -7,6 +7,7 @@ from google import genai
 from google.genai import types
 from .prompt_service import PromptService
 from .api_utils import get_weather
+from config import config
 from models.data_models import (
     StationData,
     DeliveryData,
@@ -24,22 +25,11 @@ load_dotenv()
 
 class LLMService:
     def __init__(self):
-        self.client = genai.Client(api_key=os.getenv("gemenikey"))
+        self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         self.prompt_service = PromptService()
 
-        # SIMPLIFIED connection config (better for development)
-        self.db_config = {
-            "host": "localhost",
-            "port": 3306,
-            "user": "mp_app",
-            "password": "devpass",
-            "database": "manage_petro",
-            "charset": "utf8mb4",
-            "use_unicode": True,
-            "autocommit": False,
-            "connection_timeout": 10,
-            # REMOVED problematic pool settings for development
-        }
+        # Database configuration from centralized config
+        self.db_config = config.get_db_config()
 
     @contextmanager
     def get_db_connection(self):
