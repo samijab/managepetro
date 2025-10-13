@@ -847,19 +847,19 @@ class LLMService:
                             current_stop = {"station": station_info}
                     elif "Distance from previous:" in line:
                         current_stop["distance"] = self._clean_markdown(
-                            line.split(":")[-1].strip()
+                            line.split(":", 1)[-1].strip()
                         )
                     elif "Fuel to deliver:" in line:
                         current_stop["fuel_delivery"] = self._clean_markdown(
-                            line.split(":")[-1].strip()
+                            line.split(":", 1)[-1].strip()
                         )
                     elif "ETA:" in line:
                         current_stop["eta"] = self._clean_markdown(
-                            line.split(":")[-1].strip()
+                            line.split(":", 1)[-1].strip()
                         )
                     elif "Reason:" in line:
                         current_stop["reason"] = self._clean_markdown(
-                            line.split(":")[-1].strip()
+                            line.split(":", 1)[-1].strip()
                         )
 
                 # Add last stop
