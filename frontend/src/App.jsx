@@ -1,41 +1,85 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider } from "./contexts/AuthContext";
+import AuthGuard from "./components/auth/AuthGuard";
+import LoginForm from "./components/auth/LoginForm";
 import Header from "./components/Header";
 import RoutePage from "./pages/RoutePage";
 import StationsPage from "./pages/StationsPage";
 import DemoRoutePage from "./pages/DemoRoutePage";
 import DispatcherPage from "./pages/DispatcherPage";
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-
 function App() {
   const [selectedLLM, setSelectedLLM] = useState("gemini-2.5-flash");
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Header selectedLLM={selectedLLM} onLLMChange={setSelectedLLM} />
+  // Memoize QueryClient to prevent recreating on each render (React 19 best practice)
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            refetchOnWindowFocus: false,
+            retry: 1,
+          },
+        },
+      }),
+    []
+  );
 
-          <Routes>
-            <Route path="/" element={<RoutePage selectedLLM={selectedLLM} />} />
-            <Route path="/stations" element={<StationsPage />} />
-            <Route path="/dispatcher" element={<DispatcherPage />} />
-            <Route path="/demo" element={<DemoRoutePage />} />
-          </Routes>
-        </div>
-      </Router>
-    </QueryClientProvider>
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-50">
+              <Header selectedLLM={selectedLLM} onLLMChange={setSelectedLLM} />
+
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginForm />} />
+
+                {/* Protected routes - require authentication */}
+                <Route
+                  path="/"
+                  element={
+                    <AuthGuard>
+                      <RoutePage selectedLLM={selectedLLM} />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/stations"
+                  element={
+                    <AuthGuard>
+                      <StationsPage />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/dispatcher"
+                  element={
+                    <AuthGuard>
+                      <DispatcherPage />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/demo"
+                  element={
+                    <AuthGuard>
+                      <DemoRoutePage />
+                    </AuthGuard>
+                  }
+                />
+              </Routes>
+            </div>
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

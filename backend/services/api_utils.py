@@ -1,10 +1,7 @@
 import requests
 from typing import Tuple, Dict, Any, List, Optional
 from models.data_models import WeatherData
-from config import Config
-
-# Initialize configuration
-config = Config()
+from config import config
 
 
 def get_weather(city: str) -> WeatherData:

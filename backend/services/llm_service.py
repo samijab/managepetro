@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 from .prompt_service import PromptService
 from .api_utils import get_weather
-from config import Config
+from config import config
 from models.data_models import (
     StationData,
     DeliveryData,
@@ -17,9 +17,6 @@ from models.data_models import (
 )
 from typing import Dict, Any, Optional, List
 
-# Initialize configuration
-config = Config()
-
 
 class LLMService:
     def __init__(self):
@@ -28,14 +25,8 @@ class LLMService:
 
         # Database configuration from centralized config
         self.db_config = {
-            "host": config.DB_HOST,
-            "port": config.DB_PORT,
-            "database": config.DB_NAME,
-            "user": config.DB_USER,
-            "password": config.DB_PASS,
+            **config.get_db_config(),
             "autocommit": True,
-            "charset": "utf8mb4",
-            "use_unicode": True,
             "get_warnings": True,
         }
 

@@ -1,15 +1,38 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from datetime import timedelta
 
 # Import your services
 from services.llm_service import LLMService
 from services.api_utils import get_weather, calculate_route, calculate_reachable_range
+from services.auth_service import (
+    auth_service,
+    get_current_active_user,
+)
+from models.auth_models import UserCreate, User, Token
+from config import config
 
 
 app = FastAPI(
     title="Manage Petro API",
     description="API for managing fuel delivery operations with AI-powered route optimization",
     version="1.0.0",
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # React development server
+        "http://localhost:3001",  # Alternative React port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Initialize services
@@ -101,8 +124,10 @@ class DispatchOptimizationRequest(BaseModel):
 
 
 @app.post("/api/routes/optimize")
-async def optimize_route_ai(request: RouteRequest):
-    """AI-powered route optimization using markdown-refined prompts"""
+async def optimize_route_ai(
+    request: RouteRequest, current_user: User = Depends(get_current_active_user)
+):
+    """AI-powered route optimization using markdown-refined prompts (Protected)"""
     try:
         if request.use_ai_optimization:
             # Use AI service with markdown refinement
@@ -117,6 +142,8 @@ async def optimize_route_ai(request: RouteRequest):
                 vehicle_type=request.vehicle_type,
                 notes=request.notes,
             )
+            # Add user info to response
+            result["requested_by"] = current_user.username
             return result
         else:
             # Fallback to basic response
@@ -124,6 +151,7 @@ async def optimize_route_ai(request: RouteRequest):
                 "message": "AI optimization disabled",
                 "from_location": request.from_location,
                 "to_location": request.to_location,
+                "requested_by": current_user.username,
             }
 
     except Exception as e:
@@ -275,16 +303,90 @@ def health_check():
     }
 
 
+# ===== AUTHENTICATION ENDPOINTS =====
+
+
+@app.post("/auth/register", response_model=User)
+def register_user(user_data: UserCreate):
+    """Register a new user"""
+    try:
+        user = auth_service.create_user(
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
+        )
+        # Convert to User model (without hashed_password)
+        return User(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            is_active=user.is_active,
+            created_at=user.created_at,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@app.post("/auth/token", response_model=Token)
+def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Login user and return JWT token"""
+    try:
+        user = auth_service.authenticate_user(form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        access_token_expires = timedelta(minutes=config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth_service.create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=int(access_token_expires.total_seconds()),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+
+@app.get("/auth/me", response_model=User)
+async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+    """Get current user information"""
+    return current_user
+
+
+@app.post("/auth/logout")
+async def logout_user():
+    """Logout user (client should delete token)"""
+    return {"message": "Successfully logged out"}
+
+
+# ===== END AUTHENTICATION ENDPOINTS =====
+
+
 # Dispatch optimization endpoint
 @app.post("/api/dispatch/optimize")
-async def optimize_dispatch(request: DispatchOptimizationRequest):
-    """AI-powered dispatch optimization for trucks to stations needing fuel"""
+async def optimize_dispatch(
+    request: DispatchOptimizationRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    """AI-powered dispatch optimization for trucks to stations needing fuel (Protected)"""
     try:
         result = await llm_service.optimize_dispatch(
             truck_id=request.truck_id,
             depot_location=request.depot_location,
             llm_model=request.llm_model,
         )
+        # Add user info to response
+        result["requested_by"] = current_user.username
         return result
     except Exception as e:
         raise HTTPException(

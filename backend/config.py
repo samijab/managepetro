@@ -39,6 +39,11 @@ class Config:
     DB_USER: str
     DB_PASS: str
 
+    # JWT Configuration
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int
+
     # Optional Configuration
     WEATHER_CITY: str
 
@@ -95,6 +100,22 @@ class Config:
         if not self.DB_PASS:
             missing_vars.append("DB_PASS")
 
+        # JWT Configuration (Required for security)
+        self.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip()
+        if not self.JWT_SECRET_KEY:
+            missing_vars.append("JWT_SECRET_KEY")
+
+        # JWT Configuration (Optional with secure defaults)
+        self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256").strip()
+
+        jwt_expire_str = os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30").strip()
+        try:
+            self.JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(jwt_expire_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"JWT_ACCESS_TOKEN_EXPIRE_MINUTES must be a valid integer, got: {jwt_expire_str}"
+            )
+
         # Optional Configuration (with defaults)
         self.WEATHER_CITY = os.getenv("WEATHER_CITY", "Vancouver").strip()
 
@@ -115,7 +136,8 @@ class Config:
             f"To fix this issue:\n"
             f"1. Create a .env file in the backend directory\n"
             f"2. Copy the contents from .env.example\n"
-            f"3. Fill in your actual API keys and configuration values\n\n"
+            f"3. Fill in your actual API keys and configuration values\n"
+            f'4. Generate a secure JWT_SECRET_KEY (use: python -c "import secrets; print(secrets.token_urlsafe(32))")\n\n'
             f"Example .env file location:\n"
             f"  backend/.env\n\n"
             f"For more information, see backend/README.md\n"
