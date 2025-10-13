@@ -1,26 +1,31 @@
 # Backend - Python FastAPI Server
 
-> **📖 For complete setup instructions, see the main [README.md](../README.md) in the project root.**
+> **📖 New to setup?** Go to the main [README.md](../README.md) in the project root first!
 
-This directory contains the Python FastAPI backend server for Manage Petro.
+This folder contains the Python server that powers the Manage Petro app.
 
-## Quick Start (If You've Already Done Main Setup)
+## Quick Commands (For Daily Use)
 
-1. **Start the database**:
+**⚠️ Important: Always run these commands FROM the backend folder!**
 
-   ```bash
-   docker compose up -d
-   ```
+### Start Everything:
 
-2. **Start the backend server**:
+```bash
+# 📍 Make sure you're in the backend folder first:
+cd backend
 
-   ```bash
-   fastapi dev main.py
-   ```
+# Start database (run once per day):
+docker compose up -d
 
-3. **Access the API**:
-   - API Server: http://localhost:8000
-   - Interactive Docs: http://localhost:8000/docs
+# Start Python server (keep terminal open):
+fastapi dev main.py
+```
+
+### Check If Things Are Working:
+
+- **Database running?** Visit: http://localhost:8000/docs
+- **See API documentation?** You're good to go!
+- **Get errors?** See troubleshooting below
 
 ## Key Files
 
@@ -33,71 +38,97 @@ This directory contains the Python FastAPI backend server for Manage Petro.
 - `models/` - Database and API data models
 - `db/` - Database schema and seed data
 
-## Database Commands
+## Database Commands (Run in Backend Folder)
+
+**📍 All commands below must be run from the backend folder!**
 
 ```bash
-# Start database with sample data
+# Start database (daily - run this every morning):
 docker compose up -d
 
-# Stop database (keeps data)
+# Stop database but keep your data:
 docker compose down
 
-# Reset database (removes all data)
+# Nuclear option - delete everything and start fresh:
 docker compose down -v
+docker compose up -d
 
-# Check if database is running
+# Check if database is actually running:
 docker ps
-
-# Access database directly
-docker exec -it manage-petro-mysql mysql -ump_app -pdevpass manage_petro
+# Look for "manage-petro-mysql" in the list
 ```
 
-## API Endpoints
+## What This Backend Does
 
-Visit http://localhost:8000/docs when the server is running to see all available endpoints interactively.
+When you visit http://localhost:8000/docs you can see all the API endpoints.
 
-Key endpoints:
+**Main features:**
 
-- `/api/stations` - Fuel station management
-- `/api/trucks` - Truck fleet information
-- `/api/route/optimize` - AI-powered route optimization
-- `/api/dispatch/optimize` - Truck dispatch optimization
-- `/api/weather/{city}` - Weather information
+- `/api/stations` - Manages fuel stations
+- `/api/trucks` - Handles truck information
+- `/api/route/optimize` - AI route planning
+- `/api/dispatch/optimize` - Smart truck dispatching
+- `/api/weather/{city}` - Gets weather data
 
-## Environment Variables Required
+## Your API Keys (.env file)
 
-Create a `.env` file with your API keys (copy from `.env.example`):
+**📍 Location: This must be in the backend folder as `.env`**
+
+Copy from `.env.example` and fill in your keys:
 
 ```env
-WEATHER_API_KEY=your_weather_api_key
-TOMTOM_API_KEY=your_tomtom_api_key
-GEMINI_API_KEY=your_gemini_api_key
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=manage_petro
-DB_USER=mp_app
-DB_PASS=devpass
+WEATHER_API_KEY=get_from_weatherapi.com
+TOMTOM_API_KEY=get_from_developer.tomtom.com
+GEMINI_API_KEY=get_from_makersuite.google.com
 ```
 
-## Troubleshooting
+## Common Problems & Solutions
 
-**Database won't connect?**
+### "Database won't connect" or "Connection refused"
 
-- Make sure Docker Desktop is running
-- Run `docker compose up -d` to start the database
-- Check `docker ps` to verify the container is running
+**📍 Run these in backend folder:**
 
-**Missing module errors?**
+```bash
+docker compose down
+docker compose up -d
+docker ps    # Should show manage-petro-mysql running
+```
 
-- Run `pip install -r requirements.txt`
+**If still broken:** Check Docker Desktop is running (whale icon)
 
-**API key errors?**
+### "ModuleNotFoundError" or Python errors
 
-- Check your `.env` file exists and has valid API keys
-- The server will show specific missing variables on startup
+**📍 Run in backend folder:**
 
-**Port 8000 already in use?**
+```bash
+pip install -r requirements.txt
+```
 
-- Stop other Python/FastAPI servers
-- Or change the port in `main.py`
+**If pip not found:** Python wasn't installed with PATH option
+
+### "API key errors" or "Missing environment variables"
+
+1. Check `.env` file exists in backend folder
+2. Open it and verify all three API keys are filled in
+3. No quotes or extra spaces around the keys
+4. Save the file and restart the server
+
+### "Port 8000 already in use"
+
+**Problem:** Another Python server is running
+**Solutions:**
+
+- Close other terminals running Python servers
+- Restart your computer
+- Change port in `main.py` (advanced)
+
+### Server won't start / "I broke everything"
+
+**📍 Nuclear reset (run in backend folder):**
+
+```bash
+docker compose down -v     # Delete all data
+pip install -r requirements.txt
+docker compose up -d       # Start fresh
+fastapi dev main.py       # Restart server
+```
