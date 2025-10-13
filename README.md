@@ -1,139 +1,150 @@
-# Manage Petro – ISSP Project
+# Manage Petro Setup Guide
 
-Monorepo with a React (Vite) frontend and a Python FastAPI backend.
+AI-powered fuel delivery management system with React frontend and Python backend.
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- Python 3.10+ and pip
-- Git
+Install these first:
 
-## Project Structure
+- **Git**: https://git-scm.com/downloads
+- **Node.js 18+**: https://nodejs.org (includes npm)
+- **Python 3.10+**: https://python.org/downloads (check "Add to PATH" on Windows)
+- **Docker Desktop**: https://www.docker.com/products/docker-desktop
 
-```
-ISSP Project/
-├─ backend/                 # FastAPI app (main.py, requirements.txt)
-└─ frontend/                # Vite + React app
-   ├─ public/
-   ├─ src/
-   ├─ package.json
-   ├─ vite.config.js
-   └─ index.html
-```
+## Quick Setup
 
-## Git Workflow
-
-### Initial Clone
+### 1. Clone & Navigate
 
 ```bash
 git clone <repository-url>
 cd "ISSP Project"
 ```
 
-### Working with devmain Branch
-
-The **devmain** branch is our default development branch.
+### 2. Start Database
 
 ```bash
-# Switch to devmain (if not already there)
-git checkout devmain
-
-# Pull latest changes before starting work
-git pull origin devmain
-
-# Create a feature branch for your work
-git checkout -b feature/your-feature-name
-
-# Make your changes, then commit
-git add .
-git commit -m "Add your descriptive commit message"
-
-# Push your feature branch
-git push origin feature/your-feature-name
-
-# Create a Pull Request to merge into devmain
+cd backend
+docker compose up -d
 ```
 
-### Daily Workflow
+### 3. Configure API Keys
 
 ```bash
-# Start of day - sync with latest devmain
-git checkout devmain
-git pull origin devmain
-
-# Create/switch to your feature branch
-git checkout -b feature/new-feature
-# or: git checkout feature/existing-feature
-
-# After making changes
-git add .
-git commit -m "Descriptive commit message"
-git push origin feature/your-feature-name
+# Copy template
+copy .env.example .env    # Windows
+cp .env.example .env      # Mac/Linux
 ```
 
-### Branch Strategy
+Edit `.env` with your API keys (get them free from these sites):
 
-- **devmain** - Main development branch (default)
-- **feature/\*** - Feature branches for new development
-- **fix/\*** - Hotfix branches for bug fixes
-- **main** - Production branch (stable releases only)
+- **Weather**: https://www.weatherapi.com/
+- **Maps**: https://developer.tomtom.com/
+- **AI**: https://makersuite.google.com/app/apikey
 
-## One-time Setup
-
-### Backend (FastAPI)
-
-```powershell
-cd "backend"           # macOS/Linux: source venv/bin/activate
-pip install -r requirements.txt      # requirements.txt contains: fastapi[standard]
+```env
+WEATHER_API_KEY=your_key_here
+TOMTOM_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
 ```
 
-### Frontend (Vite + React)
+### 4. Setup Backend
 
-```powershell
-cd "frontend"
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### 5. Setup Frontend
+
+```bash
+cd frontend
 npm install
 ```
 
-## Run in Development
+## Running the App
 
-Open two terminals.
+**Start all three components** (open 3 terminals):
 
-1. Backend (FastAPI)
+1. **Database**: `cd backend && docker compose up -d`
+2. **Backend**: `cd backend && fastapi dev main.py`
+3. **Frontend**: `cd frontend && npm run dev`
 
-```powershell
-cd "backend"
-fastapi dev main.py
-# API: http://localhost:8000  |  Docs: http://localhost:8000/docs
+Then visit: http://localhost:3000
+
+## URLs
+
+- **App**: http://localhost:3000
+- **API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+## Troubleshooting
+
+**Database won't start?**
+
+```bash
+docker compose down
+docker compose up -d
 ```
 
-2. Frontend (Vite)
+**Module errors?**
 
-```powershell
-cd "frontend"
-npm run dev
-# App: http://localhost:3000
+```bash
+pip install -r requirements.txt  # Backend
+npm install                      # Frontend
 ```
 
-## Contributing
+**Port conflicts?** Stop other apps using ports 3000, 8000, or 3306.
 
-1. **Always work on feature branches** - Never commit directly to devmain
-2. **Pull latest devmain** before creating new features
-3. **Create descriptive commit messages**
-4. **Test your changes** before pushing
-5. **Create Pull Requests** for code review before merging
+**API key errors?** Check your `.env` file has valid keys from the websites above.
 
-### Commit Message Format
+## Project Structure
 
 ```
-type: brief description
-
-- More detailed explanation if needed
-- Use bullet points for multiple changes
+ISSP Project/
+├── backend/           # Python FastAPI + MySQL
+│   ├── main.py       # API server
+│   ├── .env          # Your API keys (create this)
+│   └── services/     # AI & business logic
+└── frontend/         # React app
+    ├── src/          # Components & pages
+    └── package.json  # Dependencies
 ```
 
-Examples:
+## Development Workflow
 
-- `feat: add route optimization form validation`
-- `fix: resolve mobile navigation menu overlay issue`
-- `refactor: simplify header component logo styling`
-- `docs: update API documentation for route endpoints`
+1. **Pull latest changes**:
+
+   ```bash
+   git checkout devmain
+   git pull origin devmain
+   ```
+
+2. **Create feature branch**:
+
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+
+3. **Make changes and commit**:
+
+   ```bash
+   git add .
+   git commit -m "feat: your description"
+   git push origin feature/your-feature
+   ```
+
+4. **Create Pull Request** to merge into `devmain`
+
+## Branches
+
+- `devmain` - Main development branch
+- `feature/*` - New features
+- `fix/*` - Bug fixes
+- `main` - Production releases
+
+## Need Help?
+
+1. Check Docker Desktop is running
+2. Ensure all terminals stay open while developing
+3. Verify you're using the correct URLs above
+4. Check terminal output for specific error messages
