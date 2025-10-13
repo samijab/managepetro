@@ -327,36 +327,26 @@ const Api = {
    * @returns {Object} Standardized dispatch data
    */
   transformDispatchResponse: (apiData) => {
-    // Extract all fields from the API response
+    // The backend returns dispatch_summary, route_stops, truck, stations_available, and ai_analysis
+    // This function ensures the data structure is properly consumed by the frontend
     const {
-      truck,
-      stations_to_visit = [],
-      route_plan = {},
-      optimization_summary = {},
+      dispatch_summary = {},
+      route_stops = [],
+      truck = {},
+      stations_available = [],
+      depot_location = "",
       ai_analysis = "",
-      data_sources = {},
       ...otherFields
     } = apiData;
 
+    // Return the data in the structure expected by DispatchResultCard
     return {
-      truck: truck || {},
-      stationsToVisit: stations_to_visit,
-      routePlan: {
-        totalDistance: route_plan.total_distance || "N/A",
-        totalDuration: route_plan.total_duration || "N/A",
-        fuelToDeliver: route_plan.fuel_to_deliver || "N/A",
-        departureTime: route_plan.departure_time || "N/A",
-        returnTime: route_plan.return_to_depot || "N/A",
-        ...route_plan,
-      },
-      optimizationSummary: {
-        efficiencyScore: optimization_summary.efficiency_score || "N/A",
-        stationsPerTrip: optimization_summary.stations_per_trip_ratio || "N/A",
-        fuelConsumption: optimization_summary.estimated_truck_fuel_consumption || "N/A",
-        ...optimization_summary,
-      },
-      aiAnalysis: ai_analysis,
-      dataSources: data_sources,
+      dispatch_summary,
+      route_stops,
+      truck,
+      stations_available,
+      depot_location,
+      ai_analysis,
       // Include any additional fields that might be added by backend
       ...otherFields,
     };
