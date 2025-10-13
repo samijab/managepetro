@@ -8,10 +8,16 @@ from config import config
 def fetch_weather() -> WeatherData:
     """Fetch weather data using standardized model"""
     url = f"https://api.weatherapi.com/v1/current.json?key={config.WEATHER_API_KEY}&q={config.WEATHER_CITY}"
-    r = requests.get(url)
-    r.raise_for_status()
-    data = r.json()
-    return WeatherData.from_api_response(data)
+
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return WeatherData.from_api_response(data)
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Weather API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"Weather API response parsing failed: {str(e)}")
 
 
 def save_to_db(weather: WeatherData):

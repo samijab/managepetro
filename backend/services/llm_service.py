@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error as MySQLError
 from contextlib import contextmanager
@@ -6,7 +5,7 @@ from google import genai
 from google.genai import types
 from .prompt_service import PromptService
 from .api_utils import get_weather
-from config import config
+from config import Config
 from models.data_models import (
     StationData,
     DeliveryData,
@@ -18,8 +17,8 @@ from models.data_models import (
 )
 from typing import Dict, Any, Optional, List
 
-# Load environment variables
-load_dotenv()
+# Initialize configuration
+config = Config()
 
 
 class LLMService:
@@ -28,7 +27,17 @@ class LLMService:
         self.prompt_service = PromptService()
 
         # Database configuration from centralized config
-        self.db_config = config.get_db_config()
+        self.db_config = {
+            "host": config.DB_HOST,
+            "port": config.DB_PORT,
+            "database": config.DB_NAME,
+            "user": config.DB_USER,
+            "password": config.DB_PASS,
+            "autocommit": True,
+            "charset": "utf8mb4",
+            "use_unicode": True,
+            "get_warnings": True,
+        }
 
     @contextmanager
     def get_db_connection(self):

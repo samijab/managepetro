@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 # Import your services
 from services.llm_service import LLMService
@@ -18,9 +18,11 @@ llm_service = LLMService()
 
 # Pydantic models for request/response (Updated for Pydantic v2)
 class RouteRequest(BaseModel):
-    model_config = ConfigDict(
-        str_strip_whitespace=True, validate_assignment=True, extra="forbid"
-    )
+    model_config = {
+        "str_strip_whitespace": True,
+        "validate_assignment": True,
+        "extra": "forbid",
+    }
 
     from_location: str = Field(
         ..., min_length=2, max_length=100, description="Starting location"
@@ -39,7 +41,9 @@ class RouteRequest(BaseModel):
         default=None, description="Desired arrival time (ISO format or HH:MM)"
     )
     time_mode: str = Field(
-        default="departure", pattern="^(departure|arrival)$", description="Time optimization mode"
+        default="departure",
+        pattern="^(departure|arrival)$",
+        description="Time optimization mode",
     )
     delivery_date: str | None = Field(
         default=None, description="Preferred delivery date (YYYY-MM-DD)"
@@ -53,7 +57,7 @@ class RouteRequest(BaseModel):
 
 
 class WeatherRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = {"str_strip_whitespace": True}
 
     city: str = Field(
         ..., min_length=1, max_length=50, description="City name for weather data"
@@ -61,7 +65,7 @@ class WeatherRequest(BaseModel):
 
 
 class TomTomRouteRequest(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = {"validate_assignment": True}
 
     origin_lat: float = Field(..., ge=-90, le=90, description="Origin latitude")
     origin_lon: float = Field(..., ge=-180, le=180, description="Origin longitude")
@@ -72,7 +76,7 @@ class TomTomRouteRequest(BaseModel):
 
 
 class ReachableRangeRequest(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = {"validate_assignment": True}
 
     origin_lat: float = Field(..., ge=-90, le=90, description="Origin latitude")
     origin_lon: float = Field(..., ge=-180, le=180, description="Origin longitude")
@@ -87,12 +91,13 @@ class ReachableRangeRequest(BaseModel):
 
 
 class DispatchOptimizationRequest(BaseModel):
-    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+    model_config = {"validate_assignment": True, "extra": "forbid"}
 
     truck_id: str = Field(..., description="Truck ID to dispatch")
     llm_model: str = Field(default="gemini-2.5-flash", description="AI model to use")
-    depot_location: str = Field(default="Toronto", description="Starting depot location")
-
+    depot_location: str = Field(
+        default="Toronto", description="Starting depot location"
+    )
 
 
 @app.post("/api/routes/optimize")
@@ -205,7 +210,14 @@ def get_stations():
                     "fuel_type": station.fuel_type,
                     "capacity_liters": station.capacity_liters,
                     "current_level_liters": station.current_level_liters,
-                    "fuel_level": int((station.current_level_liters / station.capacity_liters) * 100) if station.capacity_liters > 0 else 0,
+                    "fuel_level": (
+                        int(
+                            (station.current_level_liters / station.capacity_liters)
+                            * 100
+                        )
+                        if station.capacity_liters > 0
+                        else 0
+                    ),
                     "code": station.code,
                     "lat": float(station.lat),
                     "lon": float(station.lon),
@@ -218,7 +230,9 @@ def get_stations():
             "count": len(stations),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch stations: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch stations: {str(e)}"
+        )
 
 
 # Trucks endpoint
@@ -273,4 +287,6 @@ async def optimize_dispatch(request: DispatchOptimizationRequest):
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Dispatch optimization failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Dispatch optimization failed: {str(e)}"
+        )
