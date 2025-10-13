@@ -3,23 +3,28 @@ import { useOptimizeRoute } from "./useApiQueries";
 import Api from "../services/api";
 
 /**
+ * Initial state for route data - DRY principle
+ */
+const INITIAL_ROUTE_STATE = {
+  from: "",
+  to: "",
+  eta: null,
+  instructions: [],
+  routeSummary: null,
+  weatherImpact: null,
+  trafficConditions: null,
+  fuelStations: [],
+  recentDeliveries: [],
+  availableTrucks: [],
+  aiAnalysis: "",
+  dataSources: null,
+};
+
+/**
  * Custom hook for managing route calculation state using React Query
  */
 export function useRouteData() {
-  const [routeData, setRouteData] = useState({
-    from: "",
-    to: "",
-    eta: null,
-    instructions: [],
-    routeSummary: null,
-    weatherImpact: null,
-    trafficConditions: null,
-    fuelStations: [],
-    recentDeliveries: [],
-    availableTrucks: [],
-    aiAnalysis: "",
-    dataSources: null,
-  });
+  const [routeData, setRouteData] = useState(INITIAL_ROUTE_STATE);
 
   const optimizeRouteMutation = useOptimizeRoute();
 
@@ -40,20 +45,7 @@ export function useRouteData() {
   };
 
   const clearRoute = () => {
-    setRouteData({
-      from: "",
-      to: "",
-      eta: null,
-      instructions: [],
-      routeSummary: null,
-      weatherImpact: null,
-      trafficConditions: null,
-      fuelStations: [],
-      recentDeliveries: [],
-      availableTrucks: [],
-      aiAnalysis: "",
-      dataSources: null,
-    });
+    setRouteData(INITIAL_ROUTE_STATE);
     optimizeRouteMutation.reset();
   };
 

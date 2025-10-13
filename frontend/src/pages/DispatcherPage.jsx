@@ -6,13 +6,15 @@ import TruckDispatchCard from "../components/TruckDispatchCard";
 import StationNeedsCard from "../components/StationNeedsCard";
 import DispatchResultCard from "../components/DispatchResultCard";
 import { TruckIcon, MapPinIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import Api from "../services/api";
+import { DEFAULT_DEPOT_LOCATION, DEFAULT_LLM_MODEL, LLM_MODELS, FUEL_THRESHOLDS, TRUCK_STATUS, REQUEST_METHODS } from "../constants/config";
 
 function DispatcherPage() {
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [dispatchResult, setDispatchResult] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [depotLocation, setDepotLocation] = useState("Toronto");
-  const [llmModel, setLlmModel] = useState("gemini-2.5-flash");
+  const [depotLocation, setDepotLocation] = useState(DEFAULT_DEPOT_LOCATION);
+  const [llmModel, setLlmModel] = useState(DEFAULT_LLM_MODEL);
 
   // Fetch data using React Query
   const { data: trucksData, isLoading: trucksLoading, error: trucksError } = useTrucks();
@@ -22,9 +24,9 @@ function DispatcherPage() {
   const trucks = trucksData?.trucks || [];
   const stations = useMemo(() => {
     if (!stationsData?.stations) return [];
-    // Filter stations that need refuelling
+    // Filter stations that need refuelling based on defined threshold
     return stationsData.stations.filter(
-      (station) => station.needs_refuel || station.fuel_level < 30
+      (station) => station.needs_refuel || station.fuel_level < FUEL_THRESHOLDS.HIGH
     );
   }, [stationsData]);
 
@@ -42,7 +44,9 @@ function DispatcherPage() {
       },
       {
         onSuccess: (result) => {
-          setDispatchResult(result);
+          // Transform the API response for consistent frontend consumption
+          const transformedResult = Api.transformDispatchResponse(result);
+          setDispatchResult(transformedResult);
         },
         onError: () => {
           setDispatchResult(null);
@@ -121,9 +125,11 @@ function DispatcherPage() {
                   onChange={(e) => setLlmModel(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast)</option>
-                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                  {LLM_MODELS.map((model) => (
+                    <option key={model.value} value={model.value}>
+                      {model.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -142,7 +148,7 @@ function DispatcherPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm font-medium text-gray-500">Available Trucks</div>
           <div className="mt-1 text-3xl font-semibold text-gray-900">
-            {trucks.filter((t) => t.status === "active").length}
+            {trucks.filter((t) => t.status === TRUCK_STATUS.ACTIVE).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
@@ -154,7 +160,7 @@ function DispatcherPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm font-medium text-gray-500">IoT Auto-Requests</div>
           <div className="mt-1 text-3xl font-semibold text-blue-600">
-            {stations.filter((s) => s.request_method === "IoT").length}
+            {stations.filter((s) => s.request_method === REQUEST_METHODS.IOT).length}
           </div>
         </div>
       </div>

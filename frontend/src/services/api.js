@@ -318,6 +318,49 @@ const Api = {
     });
     return Api.transformRouteResponse(response);
   },
+
+  /**
+   * Transform dispatch optimization API response to standardized format.
+   * Ensures all backend data is properly consumed by the frontend.
+   * 
+   * @param {Object} apiData - Raw dispatch API response
+   * @returns {Object} Standardized dispatch data
+   */
+  transformDispatchResponse: (apiData) => {
+    // Extract all fields from the API response
+    const {
+      truck,
+      stations_to_visit = [],
+      route_plan = {},
+      optimization_summary = {},
+      ai_analysis = "",
+      data_sources = {},
+      ...otherFields
+    } = apiData;
+
+    return {
+      truck: truck || {},
+      stationsToVisit: stations_to_visit,
+      routePlan: {
+        totalDistance: route_plan.total_distance || "N/A",
+        totalDuration: route_plan.total_duration || "N/A",
+        fuelToDeliver: route_plan.fuel_to_deliver || "N/A",
+        departureTime: route_plan.departure_time || "N/A",
+        returnTime: route_plan.return_to_depot || "N/A",
+        ...route_plan,
+      },
+      optimizationSummary: {
+        efficiencyScore: optimization_summary.efficiency_score || "N/A",
+        stationsPerTrip: optimization_summary.stations_per_trip_ratio || "N/A",
+        fuelConsumption: optimization_summary.estimated_truck_fuel_consumption || "N/A",
+        ...optimization_summary,
+      },
+      aiAnalysis: ai_analysis,
+      dataSources: data_sources,
+      // Include any additional fields that might be added by backend
+      ...otherFields,
+    };
+  },
 };
 
 export default Api;

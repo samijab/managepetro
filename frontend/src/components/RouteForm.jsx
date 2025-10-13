@@ -6,15 +6,16 @@ import {
   CalendarIcon,
   TruckIcon,
 } from "@heroicons/react/24/outline";
+import { VEHICLE_TYPES, TIME_MODES } from "../constants/config";
 
 function RouteForm({ onSubmit, isLoading = false }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [timeMode, setTimeMode] = useState("departure");
+  const [timeMode, setTimeMode] = useState(TIME_MODES.DEPARTURE);
   const [departureTime, setDepartureTime] = useState("");
   const [arrivalTime, setArrivalTime] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [vehicleType, setVehicleType] = useState("fuel_delivery_truck");
+  const [vehicleType, setVehicleType] = useState(VEHICLE_TYPES[0].value);
   const [notes, setNotes] = useState("");
 
   const handleSubmit = (e) => {
@@ -22,8 +23,8 @@ function RouteForm({ onSubmit, isLoading = false }) {
     if (from.trim() && to.trim() && !isLoading) {
       const timeData = {
         timeMode,
-        departureTime: timeMode === "departure" ? departureTime : null,
-        arrivalTime: timeMode === "arrival" ? arrivalTime : null,
+        departureTime: timeMode === TIME_MODES.DEPARTURE ? departureTime : null,
+        arrivalTime: timeMode === TIME_MODES.ARRIVAL ? arrivalTime : null,
         deliveryDate: deliveryDate || null,
         vehicleType,
         notes: notes.trim() || null,
@@ -92,8 +93,8 @@ function RouteForm({ onSubmit, isLoading = false }) {
               <input
                 type="radio"
                 name="timeMode"
-                value="departure"
-                checked={timeMode === "departure"}
+                value={TIME_MODES.DEPARTURE}
+                checked={timeMode === TIME_MODES.DEPARTURE}
                 onChange={(e) => setTimeMode(e.target.value)}
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
@@ -105,8 +106,8 @@ function RouteForm({ onSubmit, isLoading = false }) {
               <input
                 type="radio"
                 name="timeMode"
-                value="arrival"
-                checked={timeMode === "arrival"}
+                value={TIME_MODES.ARRIVAL}
+                checked={timeMode === TIME_MODES.ARRIVAL}
                 onChange={(e) => setTimeMode(e.target.value)}
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
@@ -120,16 +121,16 @@ function RouteForm({ onSubmit, isLoading = false }) {
             <input
               type="time"
               id="timeInput"
-              value={timeMode === "departure" ? departureTime : arrivalTime}
+              value={timeMode === TIME_MODES.DEPARTURE ? departureTime : arrivalTime}
               onChange={(e) =>
-                timeMode === "departure"
+                timeMode === TIME_MODES.DEPARTURE
                   ? setDepartureTime(e.target.value)
                   : setArrivalTime(e.target.value)
               }
               disabled={isLoading}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder={
-                timeMode === "departure"
+                timeMode === TIME_MODES.DEPARTURE
                   ? "Select departure time"
                   : "Select arrival time"
               }
@@ -138,7 +139,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           </div>
           
           <p className="text-xs text-gray-500">
-            {timeMode === "departure"
+            {timeMode === TIME_MODES.DEPARTURE
               ? "AI will calculate when you'll arrive"
               : "AI will calculate when you should leave"}
           </p>
@@ -188,9 +189,11 @@ function RouteForm({ onSubmit, isLoading = false }) {
                   disabled={isLoading}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none"
                 >
-                  <option value="fuel_delivery_truck">Fuel Delivery Truck</option>
-                  <option value="tanker_truck">Tanker Truck</option>
-                  <option value="cargo_truck">Cargo Truck</option>
+                  {VEHICLE_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
                 <TruckIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
               </div>
