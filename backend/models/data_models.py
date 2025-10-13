@@ -85,6 +85,46 @@ class StationData:
         """Check if station needs refuelling"""
         threshold = self.low_fuel_threshold or 5000
         return self.current_level_liters < threshold
+    
+    @property
+    def fuel_level_percent(self) -> int:
+        """Calculate fuel level as percentage"""
+        if self.capacity_liters == 0:
+            return 0
+        return int((self.current_level_liters / self.capacity_liters) * 100)
+    
+    @property
+    def priority_level(self) -> str:
+        """Determine priority level based on fuel percentage"""
+        percent = self.fuel_level_percent
+        if percent < 10:
+            return "Critical"
+        elif percent < 30:
+            return "High"
+        elif percent < 50:
+            return "Medium"
+        else:
+            return "Low"
+    
+    def distance_to(self, other_station: "StationData") -> float:
+        """Calculate approximate distance to another station in km using Haversine formula"""
+        from math import radians, sin, cos, sqrt, atan2
+        
+        # Earth radius in kilometers
+        R = 6371.0
+        
+        lat1 = radians(self.lat)
+        lon1 = radians(self.lon)
+        lat2 = radians(other_station.lat)
+        lon2 = radians(other_station.lon)
+        
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        
+        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        
+        return R * c
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
@@ -95,6 +135,8 @@ class StationData:
             "fuel_type": self.fuel_type.title(),
             "capacity": f"{self.capacity_liters:,.0f} L",
             "current_level": f"{self.current_level_liters:,.0f} L",
+            "fuel_level_percent": self.fuel_level_percent,
+            "priority_level": self.priority_level,
             "availability": self.availability,
             "coordinates": self.coordinates,
             "request_method": self.request_method,
@@ -140,11 +182,41 @@ class TruckData:
     id: int
     code: str
     plate: str
-    capacity_liters: int
-    fuel_level_percent: int
+    capacity_liters: int  # Cargo capacity (fuel to deliver)
+    fuel_level_percent: int  # Cargo fuel level
     fuel_type: str
     status: str
     compartments: Optional[List[Dict[str, Any]]] = None
+    fuel_consumption_rate: Optional[float] = 35.0  # Liters per 100 km (default for heavy trucks)
+    truck_fuel_tank_liters: Optional[int] = 800  # Truck's own fuel tank (not cargo)
+    truck_fuel_level_percent: Optional[int] = 80  # Truck's own fuel level (not cargo)
+    
+    @property
+    def max_range_km(self) -> float:
+        """Calculate truck's driving range based on its own fuel tank (not cargo)"""
+        if not self.fuel_consumption_rate or not self.truck_fuel_tank_liters:
+            return 0.0
+        current_fuel = (self.truck_fuel_tank_liters * self.truck_fuel_level_percent) / 100
+        return (current_fuel / self.fuel_consumption_rate) * 100
+    
+    @property
+    def cargo_fuel_liters(self) -> int:
+        """Calculate current cargo fuel in liters"""
+        return int((self.capacity_liters * self.fuel_level_percent) / 100)
+    
+    @property
+    def efficiency_rating(self) -> str:
+        """Get efficiency rating based on fuel consumption"""
+        if not self.fuel_consumption_rate:
+            return "Unknown"
+        if self.fuel_consumption_rate < 30:
+            return "Excellent"
+        elif self.fuel_consumption_rate < 35:
+            return "Good"
+        elif self.fuel_consumption_rate < 40:
+            return "Average"
+        else:
+            return "Poor"
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Convert to API response format"""
@@ -156,6 +228,10 @@ class TruckData:
             "fuel_type": self.fuel_type.title(),
             "status": self.status.title(),
             "compartments": self.compartments or [],
+            "fuel_consumption_rate": self.fuel_consumption_rate,
+            "max_range_km": round(self.max_range_km, 1) if self.max_range_km else None,
+            "efficiency_rating": self.efficiency_rating,
+            "cargo_fuel_liters": self.cargo_fuel_liters,
         }
 
 

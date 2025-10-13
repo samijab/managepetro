@@ -108,6 +108,9 @@ class LLMService:
         departure_time: Optional[str] = None,
         arrival_time: Optional[str] = None,
         time_mode: str = "departure",
+        delivery_date: Optional[str] = None,
+        vehicle_type: str = "fuel_delivery_truck",
+        notes: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate route optimization using standardized data models"""
 
@@ -122,10 +125,12 @@ class LLMService:
             stations_data=db_data.stations,
             historical_routes=db_data.deliveries,
             weather_data=weather_data,
-            vehicle_type="fuel_delivery_truck",
+            vehicle_type=vehicle_type,
             departure_time=departure_time,
             arrival_time=arrival_time,
             time_mode=time_mode,
+            delivery_date=delivery_date,
+            notes=notes,
         )
 
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)

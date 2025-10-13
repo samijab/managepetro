@@ -125,6 +125,9 @@ export function useOptimizeRoute() {
         departure_time: timeData.departureTime || null,
         arrival_time: timeData.arrivalTime || null,
         time_mode: timeData.timeMode || "departure",
+        delivery_date: timeData.deliveryDate || null,
+        vehicle_type: timeData.vehicleType || "fuel_delivery_truck",
+        notes: timeData.notes || null,
       }),
   });
 }

@@ -45,6 +45,16 @@ class PromptService:
         departure_time = kwargs.get("departure_time", "Not specified")
         arrival_time = kwargs.get("arrival_time", "Not specified")
         time_mode = kwargs.get("time_mode", "departure")
+        delivery_date = kwargs.get("delivery_date", "Not specified")
+        vehicle_type = kwargs.get("vehicle_type", "fuel_delivery_truck")
+        notes = kwargs.get("notes", "No additional notes")
+
+        # Format additional context
+        additional_context = ""
+        if delivery_date and delivery_date != "Not specified":
+            additional_context += f"\n- Preferred Delivery Date: {delivery_date}"
+        if notes and notes != "No additional notes":
+            additional_context += f"\n- Special Instructions: {notes}"
 
         variables = {
             "from_location": from_location,
@@ -56,6 +66,8 @@ class PromptService:
             "departure_time": departure_time,
             "arrival_time": arrival_time,
             "time_mode": time_mode,
+            "vehicle_type": vehicle_type,
+            "additional_context": additional_context if additional_context else "None",
             **kwargs,
         }
 
@@ -76,7 +88,9 @@ class PromptService:
             formatted += f"  Location: {station.city}, {station.region}\n"
             formatted += f"  Fuel Type: {station.fuel_type.title()}, "
             formatted += f"Capacity: {station.capacity_liters:,.0f} L, "
-            formatted += f"Current: {station.current_level_liters:,.0f} L\n"
+            formatted += f"Current: {station.current_level_liters:,.0f} L ({station.fuel_level_percent}%)\n"
+            formatted += f"  Priority: {station.priority_level}, "
+            formatted += f"Needs Refuel: {'Yes' if station.needs_refuel else 'No'}\n"
             formatted += f"  Coordinates: {station.lat:.4f}, {station.lon:.4f}\n"
 
         return formatted
@@ -133,7 +147,11 @@ class PromptService:
             "truck_code": truck.code,
             "truck_plate": truck.plate,
             "truck_status": truck.status,
-            "truck_fuel_level": truck.fuel_level_percent,
+            "truck_fuel_level": truck.truck_fuel_level_percent or 80,
+            "cargo_fuel_level": truck.fuel_level_percent,
+            "truck_consumption_rate": truck.fuel_consumption_rate or 35.0,
+            "truck_efficiency": truck.efficiency_rating,
+            "truck_range": f"{truck.max_range_km:.1f}",
             "compartments_info": compartments_text,
             "depot_location": depot_location,
             "depot_weather": weather_text,
@@ -151,8 +169,9 @@ class PromptService:
         if truck.compartments:
             formatted = ""
             for comp in truck.compartments:
+                utilization = int((comp['current_level_liters'] / comp['capacity_liters']) * 100)
                 formatted += f"  - Compartment {comp['compartment_number']}: {comp['fuel_type']} - "
-                formatted += f"{comp['capacity_liters']} L capacity ({comp['current_level_liters']} L current)\n"
+                formatted += f"{comp['capacity_liters']} L capacity ({comp['current_level_liters']} L current, {utilization}% utilized)\n"
             return formatted.rstrip()
         else:
             return f"  - Single compartment: {truck.fuel_type} - {truck.capacity_liters} L"
@@ -164,8 +183,17 @@ class PromptService:
 
         formatted = ""
         for i, station in enumerate(stations, 1):
-            fuel_percent = int((station.current_level_liters / station.capacity_liters) * 100)
+            fuel_percent = station.fuel_level_percent
             needed = station.capacity_liters - station.current_level_liters
+            
+            # Find nearby stations within 50 km
+            nearby = []
+            for other in stations:
+                if other.id != station.id:
+                    distance = station.distance_to(other)
+                    if distance <= 50:
+                        nearby.append(f"{other.name} ({other.code}) - {distance:.1f} km, {other.priority_level} priority")
+            
             formatted += f"""
 {i}. {station.name} ({station.code})
    - Location: {station.city}, {station.region}
@@ -174,6 +202,12 @@ class PromptService:
    - Current Level: {station.current_level_liters} L ({fuel_percent}%)
    - Capacity: {station.capacity_liters} L
    - Needed: {needed} L
-   - Request Method: {station.request_method}
-"""
+   - Priority: {station.priority_level}
+   - Request Method: {station.request_method}"""
+            
+            if nearby:
+                formatted += f"\n   - Nearby Stations (within 50 km): {'; '.join(nearby[:3])}"  # Show up to 3 nearby
+            
+            formatted += "\n"
+        
         return formatted.rstrip()
