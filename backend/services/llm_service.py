@@ -77,6 +77,27 @@ class LLMService:
         
         return section_content.strip()
 
+    def _clean_markdown(self, text: str) -> str:
+        """
+        Remove markdown formatting from text.
+        Removes bold (**), italic (*), and other common markdown syntax.
+        """
+        if not text:
+            return text
+        
+        import re
+        
+        cleaned = text
+        # Remove bold markdown (**text**)
+        cleaned = re.sub(r'\*\*(.+?)\*\*', r'\1', cleaned)
+        # Remove italic markdown (*text* but not ** which is already handled)
+        cleaned = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'\1', cleaned)
+        # Remove underline markdown (__text__ and _text_)
+        cleaned = re.sub(r'__(.+?)__', r'\1', cleaned)
+        cleaned = re.sub(r'_(.+?)_', r'\1', cleaned)
+        
+        return cleaned.strip()
+
     def _parse_key_value_lines(self, text: str, mappings: dict) -> dict:
         """
         Helper method to parse key-value pairs from text lines
@@ -95,7 +116,8 @@ class LLMService:
                     if len(parts) > 1:
                         value = parts[1].strip()
                         if value:  # Only add if not empty
-                            result[result_key] = value
+                            # Clean markdown formatting from the value
+                            result[result_key] = self._clean_markdown(value)
                     break  # Move to next line after finding a match
         
         return result
@@ -798,23 +820,23 @@ class LLMService:
                         parts = line.split(".", 1)
                         try:
                             step_number = int(parts[0].strip())
-                            station_info = parts[1].strip()
+                            station_info = self._clean_markdown(parts[1].strip())
                             current_stop = {
                                 "step_number": step_number,
                                 "station": station_info
                             }
                         except (ValueError, IndexError):
                             # Fallback if step number parsing fails
-                            station_info = line.split(".", 1)[1].strip()
+                            station_info = self._clean_markdown(line.split(".", 1)[1].strip())
                             current_stop = {"station": station_info}
                     elif "Distance from previous:" in line:
-                        current_stop["distance"] = line.split(":")[-1].strip()
+                        current_stop["distance"] = self._clean_markdown(line.split(":")[-1].strip())
                     elif "Fuel to deliver:" in line:
-                        current_stop["fuel_delivery"] = line.split(":")[-1].strip()
+                        current_stop["fuel_delivery"] = self._clean_markdown(line.split(":")[-1].strip())
                     elif "ETA:" in line:
-                        current_stop["eta"] = line.split(":")[-1].strip()
+                        current_stop["eta"] = self._clean_markdown(line.split(":")[-1].strip())
                     elif "Reason:" in line:
-                        current_stop["reason"] = line.split(":")[-1].strip()
+                        current_stop["reason"] = self._clean_markdown(line.split(":")[-1].strip())
                 
                 # Add last stop
                 if current_stop:
