@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, ConfigDict
 # Import your services
 from services.llm_service import LLMService
 from services.api_utils import get_weather, calculate_route, calculate_reachable_range
-
+from routes.routes import router as optimization_router
 
 app = FastAPI(
     title="Manage Petro API",
@@ -12,6 +12,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.include_router(optimization_router)
 # Initialize services
 llm_service = LLMService()
 
