@@ -58,17 +58,17 @@ function Header({ selectedLLM, onLLMChange }) {
   return (
     <>
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center h-20">
-            {/* Logo - Fixed width */}
-            <div className="flex items-center flex-shrink-0 w-64">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center h-16 sm:h-20">
+            {/* Logo - Responsive width */}
+            <div className="flex items-center flex-shrink-0 w-32 sm:w-40 md:w-48 lg:w-64">
               <Link
                 to="/"
                 className="flex items-center"
                 onClick={closeMobileMenu}
               >
                 {/* Logo with consistent brand colors */}
-                <div className="w-40 h-16 bg-gradient-to-br from-slate-600 to-slate-700 border border-slate-500 rounded-xl px-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="w-28 h-12 sm:w-32 sm:h-14 md:w-36 md:h-14 lg:w-40 lg:h-16 bg-gradient-to-br from-slate-600 to-slate-700 border border-slate-500 rounded-xl px-2 sm:px-3 lg:px-4 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <img
                     src={managePetroLogo}
                     alt="Manage Petro"
@@ -78,12 +78,12 @@ function Header({ selectedLLM, onLLMChange }) {
               </Link>
             </div>
 
-            {/* Center Section - Navigation (Fixed position) */}
+            {/* Center Section - Navigation (Responsive) */}
             <div className="hidden lg:flex items-center justify-center flex-1">
-              <nav className="flex items-center space-x-6">
+              <nav className="flex items-center space-x-4 xl:space-x-6">
                 <Link
                   to="/"
-                  className={`text-lg font-medium transition-colors ${
+                  className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/"
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"
@@ -93,7 +93,7 @@ function Header({ selectedLLM, onLLMChange }) {
                 </Link>
                 <Link
                   to="/dispatcher"
-                  className={`text-lg font-medium transition-colors ${
+                  className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/dispatcher"
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"
@@ -103,7 +103,7 @@ function Header({ selectedLLM, onLLMChange }) {
                 </Link>
                 <Link
                   to="/stations"
-                  className={`text-lg font-medium transition-colors ${
+                  className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/stations"
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"
@@ -114,23 +114,23 @@ function Header({ selectedLLM, onLLMChange }) {
               </nav>
             </div>
 
-            {/* Right side - Fixed width to prevent shifting */}
-            <div className="flex items-center justify-end space-x-2 flex-shrink-0 w-64">
+            {/* Right side - Responsive width */}
+            <div className="flex items-center justify-end space-x-1 sm:space-x-2 flex-shrink-0 w-auto sm:w-48 md:w-56 lg:w-64">
               {/* LLM Dropdown - Always reserve space */}
               <div className="hidden sm:block relative">
                 {currentPageConfig.showLLMDropdown ? (
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 lg:px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center space-x-1 sm:space-x-2 bg-gray-100 hover:bg-gray-200 px-2 sm:px-3 lg:px-4 py-2 rounded-lg transition-colors"
                   >
-                    <span className="text-xs lg:text-sm font-medium text-gray-700">
+                    <span className="text-xs lg:text-sm font-medium text-gray-700 truncate max-w-[100px] sm:max-w-none">
                       {selectedOption?.label}
                     </span>
-                    <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                    <ChevronDownIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
                   </button>
                 ) : (
-                  // Invisible placeholder to maintain spacing
-                  <div className="w-24 h-10"></div>
+                  // Invisible placeholder to maintain spacing - responsive
+                  <div className="w-16 sm:w-20 lg:w-24 h-10"></div>
                 )}
 
                 {isDropdownOpen && currentPageConfig.showLLMDropdown && (
@@ -158,13 +158,13 @@ function Header({ selectedLLM, onLLMChange }) {
               <div className="hidden sm:block relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
+                  className="flex items-center space-x-1 sm:space-x-2 bg-gray-100 hover:bg-gray-200 px-2 sm:px-3 py-2 rounded-lg transition-colors"
                 >
-                  <UserIcon className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <UserIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-700 truncate max-w-[80px] sm:max-w-none">
                     {user?.username || "User"}
                   </span>
-                  <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                  <ChevronDownIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
                 </button>
 
                 {isUserMenuOpen && (

@@ -34,14 +34,14 @@ function RouteForm({ onSubmit, isLoading = false }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* From Input */}
           <div className="space-y-2">
             <label
               htmlFor="from"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
             >
               From
             </label>
@@ -53,9 +53,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 onChange={(e) => setFrom(e.target.value)}
                 placeholder="Enter starting location"
                 disabled={isLoading}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
-              <MagnifyingGlassIcon className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             </div>
           </div>
 
@@ -63,7 +63,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <div className="space-y-2">
             <label
               htmlFor="to"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
             >
               To
             </label>
@@ -75,20 +75,20 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 onChange={(e) => setTo(e.target.value)}
                 placeholder="Enter destination"
                 disabled={isLoading}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
-              <MagnifyingGlassIcon className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             </div>
           </div>
         </div>
 
         {/* Time Mode Selection */}
         <div className="space-y-3 border-t pt-4">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Time Preference (Optional)
           </label>
           
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
@@ -99,7 +99,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Departure Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">Departure Time</span>
             </label>
             
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -112,7 +112,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Arrival Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">Arrival Time</span>
             </label>
           </div>
 
@@ -128,14 +128,14 @@ function RouteForm({ onSubmit, isLoading = false }) {
                   : setArrivalTime(e.target.value)
               }
               disabled={isLoading}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder={
                 timeMode === TIME_MODES.DEPARTURE
                   ? "Select departure time"
                   : "Select arrival time"
               }
             />
-            <ClockIcon className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+            <ClockIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
           
           <p className="text-xs text-gray-500">
@@ -147,11 +147,11 @@ function RouteForm({ onSubmit, isLoading = false }) {
 
         {/* Additional Options */}
         <div className="space-y-3 border-t pt-4">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Additional Options
           </label>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Delivery Date */}
             <div className="space-y-2">
               <label
@@ -167,9 +167,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
-                <CalendarIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+                <CalendarIcon className="absolute left-2.5 sm:left-3 top-2 sm:top-2.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               </div>
             </div>
 
@@ -187,7 +187,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none"
                 >
                   {VEHICLE_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -195,7 +195,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
                     </option>
                   ))}
                 </select>
-                <TruckIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+                <TruckIcon className="absolute left-2.5 sm:left-3 top-2 sm:top-2.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               </div>
             </div>
           </div>
@@ -215,7 +215,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
               disabled={isLoading}
               rows="2"
               placeholder="Add any special instructions or requirements..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
             />
           </div>
         </div>
@@ -225,7 +225,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <button
             type="submit"
             disabled={!from.trim() || !to.trim() || isLoading}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-colors"
           >
             {isLoading ? (
               <>
