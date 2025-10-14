@@ -129,33 +129,26 @@ async def optimize_route_ai(
 ):
     """AI-powered route optimization using markdown-refined prompts (Protected)"""
     try:
-        if request.use_ai_optimization:
-            # Use AI service with markdown refinement
-            result = await llm_service.optimize_route(
-                request.from_location,
-                request.to_location,
-                request.llm_model,
-                departure_time=request.departure_time,
-                arrival_time=request.arrival_time,
-                time_mode=request.time_mode,
-                delivery_date=request.delivery_date,
-                vehicle_type=request.vehicle_type,
-                notes=request.notes,
-            )
-            # Add user info to response
-            result["requested_by"] = current_user.username
-            return result
-        else:
-            # Fallback to basic response
-            return {
-                "message": "AI optimization disabled",
-                "from_location": request.from_location,
-                "to_location": request.to_location,
-                "requested_by": current_user.username,
-            }
+        # Always use AI service - removed conditional check to match dispatch endpoint
+        result = await llm_service.optimize_route(
+            request.from_location,
+            request.to_location,
+            request.llm_model,
+            departure_time=request.departure_time,
+            arrival_time=request.arrival_time,
+            time_mode=request.time_mode,
+            delivery_date=request.delivery_date,
+            vehicle_type=request.vehicle_type,
+            notes=request.notes,
+        )
+        # Add user info to response
+        result["requested_by"] = current_user.username
+        return result
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Route optimization failed: {str(e)}"
+        )
 
 
 # Weather endpoint (refactored)
