@@ -1,33 +1,29 @@
-import os
 import time
 import requests
 import mysql.connector
 from models.data_models import WeatherData
-
-API_KEY = "d001fb8e247c4e4ab1b40950251010"
-CITY = "Vancouver"
-
-# Database config
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "manage_petro")
-DB_USER = os.getenv("DB_USER", "mp_app")
-DB_PASS = os.getenv("DB_PASS", "devpass")
+from config import config
 
 
 def fetch_weather() -> WeatherData:
     """Fetch weather data using standardized model"""
-    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={CITY}"
-    r = requests.get(url)
-    r.raise_for_status()
-    data = r.json()
-    return WeatherData.from_api_response(data)
+    url = f"https://api.weatherapi.com/v1/current.json?key={config.WEATHER_API_KEY}&q={config.WEATHER_CITY}"
+
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return WeatherData.from_api_response(data)
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Weather API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"Weather API response parsing failed: {str(e)}")
 
 
 def save_to_db(weather: WeatherData):
     """Save weather data to database using standardized structure"""
-    conn = mysql.connector.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME
-    )
+    db_config = config.get_db_config()
+    conn = mysql.connector.connect(**db_config)
     cur = conn.cursor()
 
     db_data = weather.to_db_dict()

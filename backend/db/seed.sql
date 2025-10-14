@@ -1,5 +1,23 @@
 USE manage_petro;
 
+-- Clear existing data (safe re-seeding)
+DELETE FROM weather_data WHERE id > 0;
+DELETE FROM station_fuel_levels WHERE id > 0;
+DELETE FROM deliveries WHERE id > 0;
+DELETE FROM truck_compartments WHERE id > 0;
+DELETE FROM trucks WHERE id > 0;
+DELETE FROM stations WHERE id > 0;
+DELETE FROM users WHERE id > 0;
+
+-- Reset AUTO_INCREMENT counters
+ALTER TABLE weather_data AUTO_INCREMENT = 1;
+ALTER TABLE station_fuel_levels AUTO_INCREMENT = 1;
+ALTER TABLE deliveries AUTO_INCREMENT = 1;
+ALTER TABLE truck_compartments AUTO_INCREMENT = 1;
+ALTER TABLE trucks AUTO_INCREMENT = 1;
+ALTER TABLE stations AUTO_INCREMENT = 1;
+ALTER TABLE users AUTO_INCREMENT = 1;
+
 INSERT INTO stations (code, name, lat, lon, city, region, fuel_type, capacity_liters, current_level_liters, request_method, low_fuel_threshold)
 VALUES
 ('S1', 'FuelLogic Toronto', 43.6510, -79.3470, 'Toronto', 'ON', 'diesel', 120000, 25000, 'IoT', 30000),

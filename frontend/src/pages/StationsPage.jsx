@@ -3,19 +3,24 @@ import DynamicTable from "../components/DynamicTable";
 import { useStations } from "../hooks/useApiQueries";
 
 function StationsPage() {
-  const { data, isLoading, error } = useStations();
+  const { data, isPending, error } = useStations();
   const stations = useMemo(() => {
     if (!data?.stations) return [];
-    
+
     // Transform API data to match table expectations
     return data.stations.map((station) => ({
       ...station,
       id: station.station_id,
-      fuel_type: station.fuel_type 
-        ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1) 
+      fuel_type: station.fuel_type
+        ? station.fuel_type.charAt(0).toUpperCase() + station.fuel_type.slice(1)
         : "Diesel",
       // Calculate priority based on fuel level
-      priority: station.fuel_level < 30 ? "High" : station.fuel_level < 60 ? "Medium" : "Low",
+      priority:
+        station.fuel_level < 30
+          ? "High"
+          : station.fuel_level < 60
+          ? "Medium"
+          : "Low",
       last_delivery: "N/A", // Backend doesn't provide this yet
     }));
   }, [data]);
@@ -102,7 +107,7 @@ function StationsPage() {
     // TODO: Implement filter modal
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-4 py-8 max-w-7xl">
@@ -124,7 +129,9 @@ function StationsPage() {
           <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-8">
             <div className="flex items-center justify-center space-x-3">
               <span className="text-red-600 text-lg">⚠</span>
-              <span className="text-red-800">{error.message || "Failed to load stations"}</span>
+              <span className="text-red-800">
+                {error.message || "Failed to load stations"}
+              </span>
             </div>
           </div>
         </main>

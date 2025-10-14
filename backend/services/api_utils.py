@@ -1,14 +1,7 @@
 import requests
-import os
-from dotenv import load_dotenv
 from typing import Tuple, Dict, Any, List, Optional
 from models.data_models import WeatherData
-
-
-load_dotenv()
-
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "d001fb8e247c4e4ab1b40950251010")
-TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "swR56X5HtTayLAASqunc560B2xErmQFq")
+from config import config
 
 
 def get_weather(city: str) -> WeatherData:
@@ -16,14 +9,18 @@ def get_weather(city: str) -> WeatherData:
     if city is None or not str(city).strip():
         raise ValueError("City parameter must not be None or empty.")
 
-    url = f"https://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={city}"
-    response = requests.get(url)
+    url = "https://api.weatherapi.com/v1/current.json"
+    params = {"key": config.WEATHER_API_KEY, "q": city, "aqi": "no"}
 
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()  # Raises HTTPError for bad responses
         data = response.json()
         return WeatherData.from_api_response(data)
-    else:
-        raise Exception(f"Weather API error: {response.status_code} {response.text}")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Weather API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"Weather API response parsing failed: {str(e)}")
 
 
 # TOMTOM ROUTING API
@@ -59,19 +56,21 @@ def calculate_route(
 
     # Prepare query parameters
     params = {
-        "key": TOMTOM_API_KEY,
+        "key": config.TOMTOM_API_KEY,
         "traffic": True,
         "routeType": "fastest",
     }
     # Add/override with options provided
-    for k, v in options.items():
-        params[k] = v
+    params.update(options)
 
-    resp = requests.get(url, params=params)
-    if resp.status_code != 200:
-        raise Exception(f"TomTom API error {resp.status_code}: {resp.text}")
-
-    return resp.json()
+    try:
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"TomTom routing API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"TomTom routing API response parsing failed: {str(e)}")
 
 
 def calculate_reachable_range(
@@ -96,7 +95,7 @@ def calculate_reachable_range(
     url = f"{base_url}/{origin_str}/{content_type}"
 
     # Build query parameters
-    params = {"key": TOMTOM_API_KEY}
+    params = {"key": config.TOMTOM_API_KEY}
 
     # Set exactly one budget parameter
     if budget_type == "distance":
@@ -113,13 +112,13 @@ def calculate_reachable_range(
         )
 
     # Add the optional parameters
-    for k, v in options.items():
-        params[k] = v
+    params.update(options)
 
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"TomTom reachable range API error {response.status_code}: {response.text}"
-        )
-
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"TomTom reachable range API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"TomTom reachable range API response parsing failed: {str(e)}")
