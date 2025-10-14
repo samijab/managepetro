@@ -24,11 +24,11 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-3 sm:px-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-red-100 rounded-full mb-4">
               <svg
-                className="w-6 h-6 text-red-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-red-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -41,17 +41,17 @@ class ErrorBoundary extends React.Component {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 text-center mb-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 text-center mb-2">
               Something went wrong
             </h2>
-            <p className="text-gray-600 text-center mb-6">
+            <p className="text-sm sm:text-base text-gray-600 text-center mb-6">
               An unexpected error occurred. Please refresh the page or contact
               support if the problem persists.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm sm:text-base hover:bg-blue-700 transition-colors"
               >
                 Refresh Page
               </button>
@@ -63,13 +63,13 @@ class ErrorBoundary extends React.Component {
                     errorInfo: null,
                   })
                 }
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm sm:text-base hover:bg-gray-300 transition-colors"
               >
                 Try Again
               </button>
             </div>
             {import.meta.env.DEV && this.state.error && (
-              <details className="mt-4 text-sm">
+              <details className="mt-4 text-xs sm:text-sm">
                 <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
                   Error Details (Development)
                 </summary>

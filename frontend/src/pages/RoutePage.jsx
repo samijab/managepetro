@@ -30,8 +30,8 @@ function RoutePage({ selectedLLM }) {
   };
 
   return (
-    <main className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="space-y-8">
+    <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 max-w-6xl">
+      <div className="space-y-6 sm:space-y-8">
         <RouteForm onSubmit={handleRouteSubmit} isLoading={isLoading} />
 
         <ActionButtons
@@ -44,9 +44,9 @@ function RoutePage({ selectedLLM }) {
         {isLoading && <LoadingSpinner />}
 
         {routeData.eta && !isLoading && (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Main route information - side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="lg:col-span-1">
                 <ETADisplay eta={routeData.eta} />
               </div>
@@ -57,7 +57,7 @@ function RoutePage({ selectedLLM }) {
             </div>
 
             {/* Additional route details - 2 column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Weather Impact Card */}
               {routeData.weatherImpact && (
                 <WeatherImpactCard weatherImpact={routeData.weatherImpact} />
@@ -72,7 +72,7 @@ function RoutePage({ selectedLLM }) {
             </div>
 
             {/* Resource Cards - 2 column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Fuel Stations Card */}
               {routeData.fuelStations && routeData.fuelStations.length > 0 && (
                 <FuelStationsCard fuelStations={routeData.fuelStations} />
@@ -86,7 +86,7 @@ function RoutePage({ selectedLLM }) {
             </div>
 
             {/* Recent Deliveries and Data Sources Cards - 2 column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Recent Deliveries Card */}
               {routeData.recentDeliveries &&
                 routeData.recentDeliveries.length > 0 && (

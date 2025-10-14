@@ -81,31 +81,31 @@ function DispatcherPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         <LoadingSpinner message="Loading dispatcher data..." />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <TruckIcon className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">
+              <TruckIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Dispatcher Dashboard
               </h1>
             </div>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Optimize truck dispatches to stations requiring fuel delivery
             </p>
           </div>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors self-start sm:self-auto"
           >
             <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Settings</span>
@@ -170,28 +170,28 @@ function DispatcherPage() {
       )}
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 sm:mb-8">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
             Available Trucks
           </div>
-          <div className="mt-1 text-3xl font-semibold text-gray-900">
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-gray-900">
             {trucks.filter((t) => t.status === TRUCK_STATUS.ACTIVE).length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
             Stations Needing Fuel
           </div>
-          <div className="mt-1 text-3xl font-semibold text-orange-600">
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-orange-600">
             {stations.length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
             IoT Auto-Requests
           </div>
-          <div className="mt-1 text-3xl font-semibold text-blue-600">
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-blue-600">
             {
               stations.filter((s) => s.request_method === REQUEST_METHODS.IOT)
                 .length
@@ -200,10 +200,10 @@ function DispatcherPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Left Column: Trucks */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
             Available Trucks ({trucks.length})
           </h2>
           <div className="space-y-4">
@@ -234,7 +234,7 @@ function DispatcherPage() {
             />
           ) : (
             <>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
                 Stations Requiring Fuel ({stations.length})
               </h2>
               <div className="space-y-4">
