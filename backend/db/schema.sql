@@ -3,7 +3,7 @@ USE manage_petro;
 
 -- USERS (Authentication)
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE users (
 
 -- STATIONS
 
-CREATE TABLE stations (
+CREATE TABLE IF NOT EXISTS stations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(32) UNIQUE NOT NULL,
   name VARCHAR(100) NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE stations (
 
 -- TRUCKS
 
-CREATE TABLE trucks (
+CREATE TABLE IF NOT EXISTS trucks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(32) UNIQUE NOT NULL,
   plate VARCHAR(32),
@@ -45,7 +45,7 @@ CREATE TABLE trucks (
 );
 
 -- DELIVERIES
-CREATE TABLE deliveries (
+CREATE TABLE IF NOT EXISTS deliveries (
   id INT AUTO_INCREMENT PRIMARY KEY,
   truck_id INT,
   station_id INT,
@@ -58,10 +58,10 @@ CREATE TABLE deliveries (
 
 -- STATION FUEL LEVELS
 
-CREATE TABLE station_fuel_levels (
+CREATE TABLE IF NOT EXISTS station_fuel_levels (
   id INT AUTO_INCREMENT PRIMARY KEY,
   station_id INT,
-  recorded_at DATETIME DEFAULT NOW(),
+  recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   fuel_level_liters DECIMAL(12,2),
   FOREIGN KEY (station_id) REFERENCES stations(id)
 );
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS weather_data (
   id INT AUTO_INCREMENT PRIMARY KEY,
   city VARCHAR(100),
   temperature FLOAT,
-  condition TEXT,
+  `condition` TEXT,
   wind FLOAT,
   humidity FLOAT,
   collected_at TIMESTAMP

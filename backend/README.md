@@ -56,6 +56,15 @@ docker compose up -d
 # Check if database is actually running:
 docker ps
 # Look for "manage-petro-mysql" in the list
+
+# To access your docker MySQL
+docker exec -it manage-petro-mysql mysql -ump_app -pdevpass manage_petro
+
+# To recreate schema on docker after schema changes (on Windows)
+Get-Content .\db\schema.sql | docker exec -i manage-petro-mysql mysql -ump_app -pdevpass manage_petro
+
+# To recreate seeded data on docker after schema changes (on Windows)
+Get-Content .\db\seed.sql | docker exec -i manage-petro-mysql mysql -ump_app -pdevpass manage_petro
 ```
 
 ## What This Backend Does
