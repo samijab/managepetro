@@ -473,127 +473,103 @@ class LLMService:
         return response.to_api_dict()
 
     def _extract_directions_from_ai(self, ai_response: str) -> list:
-        """Extract turn-by-turn directions from AI response"""
+        """
+        Robust parser for turn-by-turn directions from AI response.
+        - Flexible heading detection (case-insensitive, with or without ###)
+        - Accepts 1., 1), 1 - formats
+        - Parses inline and next-line distance/duration info
+        """
+
+        import re
         directions = []
 
         try:
-            # Look for the TURN-BY-TURN DIRECTIONS section
-            if "TURN-BY-TURN DIRECTIONS" in ai_response:
-                directions_section = ai_response.split("TURN-BY-TURN DIRECTIONS")[1]
-                if "###" in directions_section:
-                    directions_section = directions_section.split("###")[0]
+            # 1️⃣ Try to isolate a "TURN-BY-TURN DIRECTIONS" section (case-insensitive)
+            section_match = re.search(
+                r"(?:^|\n)#+\s*TURN[- ]?BY[- ]?TURN DIRECTIONS\s*(.*?)(?:\n#+|\Z)",
+                ai_response,
+                flags=re.I | re.S,
+            )
+            text_to_parse = section_match.group(1) if section_match else ai_response
 
-                lines = directions_section.strip().split("\n")
-                step_num = 1
-                i = 0
+            # 2️⃣ Find numbered steps: 1. / 1) / 1 -
+            step_pattern = re.compile(r"^\s*(\d+)[\.\)\-]\s+(.*)$", re.M)
+            steps = list(step_pattern.finditer(text_to_parse))
 
-                while i < len(lines):
-                    line = lines[i].strip()
+            for idx, match in enumerate(steps, start=1):
+                step_no = int(match.group(1))
+                instruction = match.group(2).strip()
 
-                    # Look for numbered instruction line
-                    if line and (
-                        line.startswith(f"{step_num}.")
-                        or line.startswith(str(step_num))
-                    ):
-                        # Extract instruction
-                        if ". " in line:
-                            instruction = line.split(". ", 1)[1]
-                        else:
-                            instruction = line
+                # Normalize step number (sometimes LLM restarts numbering)
+                if step_no != idx:
+                    step_no = idx
 
-                        distance = "N/A"
-                        duration = "N/A"
+                # Defaults
+                distance = "N/A"
+                duration = "N/A"
 
-                        # Look at the next line for distance/duration
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
+                # 3️⃣ Try inline "(12.3 km, 15 min)" format
+                paren_match = re.search(r"\(([^)]+)\)", instruction)
+                if paren_match and "km" in paren_match.group(1) and "min" in paren_match.group(1):
+                    parts = [p.strip() for p in paren_match.group(1).split(",")]
+                    if len(parts) >= 2:
+                        distance, duration = parts[0], parts[1]
+                    # Remove the parentheses text from the instruction
+                    instruction = re.sub(r"\([^)]+\)", "", instruction).strip()
 
-                            # Method 1: Parse "Distance: X.X km | Duration: X min" format
-                            if "Distance:" in next_line and "|" in next_line:
-                                parts = next_line.split("|")
-                                if len(parts) >= 2:
-                                    distance_part = (
-                                        parts[0].replace("Distance:", "").strip()
-                                    )
-                                    duration_part = (
-                                        parts[1].replace("Duration:", "").strip()
-                                    )
-                                    distance = distance_part
-                                    duration = duration_part
-
-                            # Method 2: Parse inline format like "(15.2 km, 18 min)"
-                            elif (
-                                "(" in instruction
-                                and "km" in instruction
-                                and "min" in instruction
-                            ):
-                                import re
-
-                                # Extract distance and duration from parentheses
-                                match = re.search(r"\(([^)]+)\)", instruction)
-                                if match:
-                                    content = match.group(1)
-                                    parts = content.split(",")
-                                    if len(parts) >= 2:
-                                        distance = parts[0].strip()
-                                        duration = parts[1].strip()
-                                    # Remove the parentheses from instruction
-                                    instruction = re.sub(
-                                        r"\([^)]+\)", "", instruction
-                                    ).strip()
-
-                        # Determine maneuver type
-                        maneuver = "straight"
-                        instruction_lower = instruction.lower()
-                        if "turn left" in instruction_lower:
-                            maneuver = "turn-left"
-                        elif "turn right" in instruction_lower:
-                            maneuver = "turn-right"
-                        elif "merge" in instruction_lower:
-                            maneuver = "merge"
-                        elif "exit" in instruction_lower:
-                            maneuver = "exit-right"
-                        elif "arrive" in instruction_lower:
-                            maneuver = "arrive"
-
-                        directions.append(
-                            {
-                                "step": step_num,
-                                "instruction": instruction,
-                                "distance": distance,
-                                "duration": duration,
-                                "maneuver": maneuver,
-                            }
-                        )
-
-                        step_num += 1
-
-                    i += 1
-
-            # Fallback if no structured directions found
-            if not directions:
-                # Try to extract any numbered lines as basic directions
-                lines = ai_response.split("\n")
-                step_num = 1
-
-                for line in lines:
+                # 4️⃣ Try next-line "Distance: ... | Duration: ..." format
+                step_end = match.end()
+                next_chunk = text_to_parse[step_end:].split("\n", 3)[:3]  # next few lines
+                for line in next_chunk:
                     line = line.strip()
-                    if line.startswith(f"{step_num}."):
-                        instruction = line.split(".", 1)[1].strip()
-                        directions.append(
-                            {
-                                "step": step_num,
-                                "instruction": instruction,
-                                "distance": "Generated by AI",
-                                "duration": "See AI analysis",
-                                "maneuver": "straight",
-                            }
-                        )
-                        step_num += 1
-                        if step_num > 10:  # Limit to reasonable number
-                            break
+                    if "Distance:" in line and "Duration:" in line and "|" in line:
+                        parts = [p.strip() for p in line.split("|")]
+                        if len(parts) >= 2:
+                            distance = parts[0].replace("Distance:", "").strip()
+                            duration = parts[1].replace("Duration:", "").strip()
+                        break
 
-            # Final fallback
+                # 5️⃣ Detect maneuver type
+                maneuver = "straight"
+                low_instr = instruction.lower()
+                if "left" in low_instr:
+                    maneuver = "turn-left"
+                elif "right" in low_instr:
+                    maneuver = "turn-right"
+                elif "merge" in low_instr:
+                    maneuver = "merge"
+                elif "exit" in low_instr:
+                    maneuver = "exit-right"
+                elif "arriv" in low_instr:
+                    maneuver = "arrive"
+
+                directions.append(
+                    {
+                        "step": step_no,
+                        "instruction": instruction,
+                        "distance": distance,
+                        "duration": duration,
+                        "maneuver": maneuver,
+                    }
+                )
+
+            # 6️⃣ Fallback: Look for numbered lines in the entire AI response if section is empty
+            if not directions:
+                fallback_steps = re.findall(r"^\s*(\d+)[\.\)\-]\s+(.*)$", ai_response, flags=re.M)
+                for idx, (_, instr) in enumerate(fallback_steps, start=1):
+                    directions.append(
+                        {
+                            "step": idx,
+                            "instruction": instr.strip(),
+                            "distance": "Generated by AI",
+                            "duration": "See AI analysis",
+                            "maneuver": "straight",
+                        }
+                    )
+                    if idx > 10:  # avoid runaway matches
+                        break
+
+            # 7️⃣ Final fallback if nothing was parsed
             if not directions:
                 directions = [
                     {
