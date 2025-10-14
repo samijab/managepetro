@@ -38,30 +38,30 @@ function DataSourcesCard({ dataSources }) {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-indigo-100 rounded-lg">
-          <ChartBarIcon className="w-6 h-6 text-indigo-600" />
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 hover:shadow-xl transition-shadow">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4">
+        <div className="p-1.5 sm:p-2 bg-indigo-100 rounded-lg flex-shrink-0">
+          <ChartBarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
         </div>
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Data Sources</h3>
-          <p className="text-sm text-gray-600">
+        <div className="min-w-0">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900">Data Sources</h3>
+          <p className="text-xs sm:text-sm text-gray-600">
             Optimization data availability
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         {dataItems.map((item, index) => (
           <div
             key={index}
-            className="p-3 bg-indigo-50 rounded-lg border border-indigo-200"
+            className="p-2 sm:p-3 bg-indigo-50 rounded-lg border border-indigo-200"
           >
             <div className="flex items-center gap-2">
-              <span className="text-2xl">{item.icon}</span>
-              <div className="flex-1">
-                <p className="text-xs text-gray-600">{item.label}</p>
-                <p className="text-lg font-bold text-gray-900">
+              <span className="text-xl sm:text-2xl flex-shrink-0">{item.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600 truncate">{item.label}</p>
+                <p className="text-base sm:text-lg font-bold text-gray-900">
                   {typeof item.value === "number" ? item.value : item.value}
                 </p>
               </div>
@@ -70,7 +70,7 @@ function DataSourcesCard({ dataSources }) {
         ))}
       </div>
 
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
         <p className="text-xs text-gray-600 text-center">
           Real-time data integration provides comprehensive route optimization
         </p>
