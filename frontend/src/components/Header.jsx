@@ -55,11 +55,12 @@ function Header({ selectedLLM, onLLMChange }) {
     [onLLMChange]
   );
 
+
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-gray-600 shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center h-16 sm:h-20">
+          <div className="flex justify-between h-16 sm:h-20">
             {/* Logo - Responsive width */}
             <div className="flex items-center flex-shrink-0 w-32 sm:w-40 md:w-48 lg:w-64">
               <Link
@@ -68,7 +69,7 @@ function Header({ selectedLLM, onLLMChange }) {
                 onClick={closeMobileMenu}
               >
                 {/* Logo with consistent brand colors */}
-                <div className="w-28 h-12 sm:w-32 sm:h-14 md:w-36 md:h-14 lg:w-40 lg:h-16 bg-gradient-to-br from-slate-600 to-slate-700 border border-slate-500 rounded-xl px-2 sm:px-3 lg:px-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="w-28 h-12 sm:w-32 sm:h-14 md:w-36 md:h-14 lg:w-40 lg:h-16 drop-shadow-xl">
                   <img
                     src={managePetroLogo}
                     alt="Manage Petro"
@@ -79,14 +80,14 @@ function Header({ selectedLLM, onLLMChange }) {
             </div>
 
             {/* Center Section - Navigation (Responsive) */}
-            <div className="hidden lg:flex items-center justify-center flex-1">
+            <div className="hidden lg:flex justify-center flex-1">
               <nav className="flex items-center space-x-4 xl:space-x-6">
                 <Link
                   to="/"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/"
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-orange-500 hover:text-orange-300"
+                      : "text-white hover:text-orange-300"
                   }`}
                 >
                   Route Optimization
@@ -95,8 +96,8 @@ function Header({ selectedLLM, onLLMChange }) {
                   to="/dispatcher"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/dispatcher"
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-orange-500 hover:text-orange-300"
+                      : "text-white hover:text-orange-300"
                   }`}
                 >
                   Dispatcher
@@ -105,8 +106,8 @@ function Header({ selectedLLM, onLLMChange }) {
                   to="/stations"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/stations"
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-orange-500 hover:text-orange-300"
+                      : "text-white hover:text-orange-300"
                   }`}
                 >
                   Stations
@@ -142,7 +143,7 @@ function Header({ selectedLLM, onLLMChange }) {
                           onClick={() => handleLLMChange(option.value)}
                           className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
                             selectedLLM === option.value
-                              ? "bg-blue-50 text-blue-600 font-medium"
+                              ? "bg-blue-50 text-orange-500 font-medium"
                               : "text-gray-700"
                           }`}
                         >
@@ -178,7 +179,8 @@ function Header({ selectedLLM, onLLMChange }) {
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
-                        <span>Sign out</span>
+                      {user ? (<span>Sign Out</span>) 
+                      :(<span>Sign In</span>)}
                       </button>
                     </div>
                   </div>
@@ -210,8 +212,8 @@ function Header({ selectedLLM, onLLMChange }) {
                 onClick={closeMobileMenu}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
                   location.pathname === "/"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "text-orange-500  hover:text-orange-300 bg-blue-50"
+                    : "text-orange-500  hover:text-orange-300 hover:bg-gray-50"
                 }`}
               >
                 Route Optimization
@@ -221,8 +223,8 @@ function Header({ selectedLLM, onLLMChange }) {
                 onClick={closeMobileMenu}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
                   location.pathname === "/dispatcher"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "text-orange-500  hover:text-orange-300 bg-blue-50"
+                    : "text-orange-500  hover:text-orange-300 hover:bg-gray-50"
                 }`}
               >
                 Dispatcher
@@ -232,8 +234,8 @@ function Header({ selectedLLM, onLLMChange }) {
                 onClick={closeMobileMenu}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
                   location.pathname === "/stations"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "text-orange-500 hover:text-orange-300 bg-blue-50"
+                    : "text-orange-500  hover:text-orange-300 hover:bg-gray-50"
                 }`}
               >
                 Stations
@@ -255,7 +257,7 @@ function Header({ selectedLLM, onLLMChange }) {
                         }}
                         className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                           selectedLLM === option.value
-                            ? "bg-blue-50 text-blue-600 font-medium"
+                            ? "bg-blue-50 text-orange-500 font-medium"
                             : "text-gray-700 hover:bg-gray-50"
                         }`}
                       >
@@ -268,7 +270,7 @@ function Header({ selectedLLM, onLLMChange }) {
 
               {/* Mobile User Menu */}
               <div className="px-3 py-2 border-t border-gray-100 mt-2">
-                <div className="text-sm font-medium text-gray-500 mb-2">
+                <div className="text-sm font-medium text-gray-700 mb-2">
                   Account
                 </div>
                 <div className="space-y-1">

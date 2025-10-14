@@ -51,16 +51,6 @@ const AuthGuard = ({ children }) => {
 
   return (
     <>
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Welcome, <span className="font-medium">{user?.username}</span>
-            </div>
-            <LogoutButton />
-          </div>
-        </div>
-      </div>
       {children}
     </>
   );
