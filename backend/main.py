@@ -6,6 +6,24 @@ from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from services.llm_service import LLMService
+from utils.serializers import (
+    station_api_dict,
+    truck_api_dict,
+    trip_dict_from_row,
+    trip_detail_from_row,
+    weather_api_dict,
+    route_response_dict,
+)
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+def _raise_logged_http_500(message: str):
+    _logger.exception(message)
+    raise HTTPException(status_code=500, detail="Internal server error")
+
+
 from services.api_utils import (
     get_weather_async,
     calculate_route_async,
@@ -15,6 +33,7 @@ from services.auth_service import (
     auth_service,
     get_current_active_user,
 )
+from logging_config import configure_logging
 from models.auth_models import UserCreate, User, Token
 from database import get_db_session
 from config import config
@@ -30,6 +49,10 @@ app = FastAPI(
     description="API for managing fuel delivery operations with AI-powered route optimization",
     version="1.0.0",
 )
+
+
+# Configure logging early
+configure_logging()
 
 # Configure CORS
 app.add_middleware(
@@ -154,9 +177,9 @@ async def optimize_route_ai(
             vehicle_type=request.vehicle_type,
             notes=request.notes,
         )
-        # Add user info to response
+        # Add user info to response and ensure ai_analysis is a string
         result["requested_by"] = current_user.username
-        return result
+        return route_response_dict(result)
 
     except Exception as e:
         raise HTTPException(
@@ -170,10 +193,7 @@ async def get_weather_info(request: WeatherRequest):
     """Get current weather information for a city"""
     try:
         weather_data = await get_weather_async(request.city)
-        return {
-            "city": request.city,
-            "weather": weather_data.to_dict(),
-        }
+        return {"city": request.city, "weather": weather_api_dict(weather_data)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -234,33 +254,7 @@ async def get_stations(session: AsyncSession = Depends(get_db_session)):
     try:
         stations = await llm_service.get_all_stations_sqlalchemy(session)
         return {
-            "stations": [
-                {
-                    "station_id": f"station-{station.id:03d}",
-                    "name": station.name,
-                    "city": station.city,
-                    "region": station.region,
-                    "country": "Canada",
-                    "fuel_type": station.fuel_type,
-                    "capacity_liters": station.capacity_liters,
-                    "current_level_liters": station.current_level_liters,
-                    "fuel_level": (
-                        int(
-                            (station.current_level_liters / station.capacity_liters)
-                            * 100
-                        )
-                        if station.capacity_liters > 0
-                        else 0
-                    ),
-                    "code": station.code,
-                    "lat": float(station.lat),
-                    "lon": float(station.lon),
-                    "request_method": station.request_method or "Manual",
-                    "low_fuel_threshold": station.low_fuel_threshold or 5000,
-                    "needs_refuel": station.needs_refuel,
-                }
-                for station in stations
-            ],
+            "stations": [station_api_dict(s) for s in stations],
             "count": len(stations),
         }
     except Exception as e:
@@ -275,22 +269,7 @@ async def get_trucks(session: AsyncSession = Depends(get_db_session)):
     """Get all trucks from database using SQLAlchemy 2.0"""
     try:
         trucks = await llm_service.get_all_trucks_sqlalchemy(session)
-        return {
-            "trucks": [
-                {
-                    "truck_id": f"truck-{truck.id:03d}",
-                    "plate_number": truck.plate,
-                    "capacity_liters": truck.capacity_liters,
-                    "fuel_level_percent": truck.fuel_level_percent,
-                    "fuel_type": truck.fuel_type,
-                    "status": truck.status,
-                    "code": truck.code,
-                    "compartments": truck.compartments or [],
-                }
-                for truck in trucks
-            ],
-            "count": len(trucks),
-        }
+        return {"trucks": [truck_api_dict(t) for t in trucks], "count": len(trucks)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch trucks: {str(e)}")
 
@@ -444,25 +423,10 @@ async def get_trips(
         result = await session.execute(stmt)
         rows = result.all()
 
-        trips = []
-        for r in rows:
-            trips.append(
-                {
-                    "trip_id": r.id,
-                    "volume_liters": r.volume_liters,
-                    "date": str(r.delivery_date),
-                    "status": r.status,
-                    "station": f"{r.station_name} ({r.station_code})",
-                    "city": r.city,
-                    "region": r.region,
-                    "lat": float(r.lat) if r.lat is not None else None,
-                    "lon": float(r.lon) if r.lon is not None else None,
-                }
-            )
-
+        trips = [trip_dict_from_row(r) for r in rows]
         return {"trips": trips, "count": len(trips)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch trips: {str(e)}")
+    except Exception:
+        _raise_logged_http_500("Failed to fetch trips")
 
 
 @app.get("/api/trips/{trip_id}")
@@ -495,24 +459,11 @@ async def get_trip(trip_id: int, session: AsyncSession = Depends(get_db_session)
             raise HTTPException(status_code=404, detail="Trip not found")
 
         r = row
-        trip = {
-            "trip_id": r.id,
-            "volume_liters": r.volume_liters,
-            "date": str(r.delivery_date),
-            "status": r.status,
-            "station": f"{r.station_name} ({r.station_code})",
-            "city": r.city,
-            "region": r.region,
-            "lat": float(r.lat) if r.lat is not None else None,
-            "lon": float(r.lon) if r.lon is not None else None,
-            "truck": f"{r.truck_code} ({r.truck_plate})",
-        }
-
-        return {"trip": trip}
+        return {"trip": trip_detail_from_row(r)}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch trip: {str(e)}")
+    except Exception:
+        _raise_logged_http_500("Failed to fetch trip")
 
 
 # Health check endpoint
@@ -621,9 +572,9 @@ async def optimize_dispatch(
             session=session,
             llm_model=request.llm_model,
         )
-        # Add user info to response
+        # Add user info to response and ensure ai_analysis is a string
         result["requested_by"] = current_user.username
-        return result
+        return route_response_dict(result)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Dispatch optimization failed: {str(e)}"
