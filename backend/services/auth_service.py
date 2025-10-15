@@ -5,10 +5,12 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from jwt.exceptions import InvalidTokenError, DecodeError
-import mysql.connector
-from mysql.connector import Error
-
-from models.auth_models import UserInDB, TokenData, User
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from models.auth_models import TokenData, User as UserResponse
+from models.database_models import User
+from database import get_db_session
 from config import config
 
 # Initialize password hashing
@@ -20,18 +22,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 class AuthService:
     def __init__(self):
-        self.db_config = config.get_db_config()
-
-    def get_db_connection(self):
-        """Get database connection"""
-        try:
-            connection = mysql.connector.connect(**self.db_config)
-            return connection
-        except Error as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database connection error: {str(e)}",
-            )
+        # SQLAlchemy doesn't need explicit DB config like mysql.connector
+        pass
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
@@ -41,121 +33,109 @@ class AuthService:
         """Hash a password"""
         return password_hash.hash(password)
 
-    def get_user_by_username(self, username: str) -> Optional[UserInDB]:
-        """Get user by username from database"""
-        connection = None
+    async def get_user_by_username(
+        self, session: AsyncSession, username: str
+    ) -> Optional[User]:
+        """Get user by username from database using SQLAlchemy 2.0"""
         try:
-            connection = self.get_db_connection()
-            cursor = connection.cursor(dictionary=True)
-
-            query = "SELECT * FROM users WHERE username = %s"
-            cursor.execute(query, (username,))
-            user_data = cursor.fetchone()
-
-            if user_data:
-                return UserInDB(**user_data)
-            return None
-
-        except Error as e:
+            stmt = select(User).where(User.username == username)
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
-    def get_user_by_email(self, email: str) -> Optional[UserInDB]:
-        """Get user by email from database"""
-        connection = None
+    async def get_user_by_email(
+        self, session: AsyncSession, email: str
+    ) -> Optional[User]:
+        """Get user by email from database using SQLAlchemy 2.0"""
         try:
-            connection = self.get_db_connection()
-            cursor = connection.cursor(dictionary=True)
-
-            query = "SELECT * FROM users WHERE email = %s"
-            cursor.execute(query, (email,))
-            user_data = cursor.fetchone()
-
-            if user_data:
-                return UserInDB(**user_data)
-            return None
-
-        except Error as e:
+            stmt = select(User).where(User.email == email)
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
-    def create_user(self, username: str, email: str, password: str) -> UserInDB:
-        """Create a new user in the database"""
-        connection = None
+    async def create_user(
+        self, session: AsyncSession, username: str, email: str, password: str
+    ) -> User:
+        """Create a new user in the database using SQLAlchemy 2.0"""
         try:
             # Check if username or email already exists
-            if self.get_user_by_username(username):
+            existing_user = await self.get_user_by_username(session, username)
+            if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Username already exists",
                 )
 
-            if self.get_user_by_email(email):
+            existing_email = await self.get_user_by_email(session, email)
+            if existing_email:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered",
                 )
 
-            connection = self.get_db_connection()
-            cursor = connection.cursor()
-
             hashed_password = self.get_password_hash(password)
 
-            query = """
-                INSERT INTO users (username, email, hashed_password, is_active, created_at)
-                VALUES (%s, %s, %s, %s, %s)
-            """
-            created_at = datetime.now(timezone.utc).isoformat()
-
-            cursor.execute(query, (username, email, hashed_password, True, created_at))
-            connection.commit()
-
-            user_id = cursor.lastrowid
-
-            # Return the created user
-            return UserInDB(
-                id=user_id,
+            # Create new user using SQLAlchemy model
+            new_user = User(
                 username=username,
                 email=email,
                 hashed_password=hashed_password,
                 is_active=True,
-                created_at=created_at,
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
 
-        except Error as e:
-            if connection:
-                connection.rollback()
+            session.add(new_user)
+            await session.commit()
+            await session.refresh(new_user)
+
+            return new_user
+
+        except HTTPException:
+            raise
+        except IntegrityError:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email already exists",
+            )
+        except Exception as e:
+            await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
-    def authenticate_user(self, username: str, password: str) -> Optional[UserInDB]:
-        """Authenticate user with username/email and password"""
+    async def authenticate_user(
+        self, session: AsyncSession, username: str, password: str
+    ) -> Optional[User]:
+        """Authenticate user with username/email and password with timing attack protection"""
         # Try to get user by username first
-        user = self.get_user_by_username(username)
+        user = await self.get_user_by_username(session, username)
 
         # If not found, try by email
         if not user:
-            user = self.get_user_by_email(username)
+            user = await self.get_user_by_email(session, username)
 
         if not user:
+            # Perform dummy hash operation to prevent timing attacks.
+            # Use a real hashed password generated by the password_hasher to avoid
+            # passing an invalid hash format to verify() which can raise.
+            try:
+                fake_hashed = password_hash.hash("dummy_password")
+                # verify against the freshly created real hash; exceptions are swallowed
+                password_hash.verify("dummy_password", fake_hashed)
+            except Exception:
+                # If anything goes wrong, just swallow to avoid leaking timing or raising
+                pass
             return None
 
         if not self.verify_password(password, user.hashed_password):
@@ -168,21 +148,33 @@ class AuthService:
     ) -> str:
         """Create JWT access token"""
         to_encode = data.copy()
+        current_time = datetime.now(timezone.utc)
+
         if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
+            expire = current_time + expires_delta
         else:
-            expire = datetime.now(timezone.utc) + timedelta(
+            expire = current_time + timedelta(
                 minutes=config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
             )
 
-        to_encode.update({"exp": expire})
+        to_encode.update(
+            {
+                "exp": expire,
+                "iat": current_time,
+                "nbf": current_time,
+            }
+        )
         encoded_jwt = jwt.encode(
             to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM
         )
         return encoded_jwt
 
-    async def get_current_user(self, token: str = Depends(oauth2_scheme)) -> User:
-        """Get current user from JWT token"""
+    async def get_current_user(
+        self,
+        token: str = Depends(oauth2_scheme),
+        session: AsyncSession = Depends(get_db_session),
+    ) -> UserResponse:
+        """Get current user from JWT token using SQLAlchemy 2.0"""
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -196,16 +188,30 @@ class AuthService:
             username: str = payload.get("sub")
             if username is None:
                 raise credentials_exception
+
+            # Additional JWT claims validation
+            issued_at = payload.get("iat")
+            expires_at = payload.get("exp")
+            current_time = datetime.now(timezone.utc).timestamp()
+
+            # Validate token timing
+            if issued_at and issued_at > current_time:
+                raise credentials_exception
+            if expires_at and expires_at < current_time:
+                raise credentials_exception
+
             token_data = TokenData(username=username)
         except (InvalidTokenError, DecodeError, Exception):
             raise credentials_exception
 
-        user = self.get_user_by_username(username=token_data.username)
+        user = await self.get_user_by_username(
+            session=session, username=token_data.username
+        )
         if user is None:
             raise credentials_exception
 
-        # Convert to User model (without hashed_password)
-        return User(
+        # Convert SQLAlchemy model to Pydantic response model
+        return UserResponse(
             id=user.id,
             username=user.username,
             email=user.email,
@@ -213,7 +219,7 @@ class AuthService:
             created_at=user.created_at,
         )
 
-    async def get_current_active_user(self, current_user: User) -> User:
+    async def get_current_active_user(self, current_user: UserResponse) -> UserResponse:
         """Get current active user"""
         if not current_user.is_active:
             raise HTTPException(status_code=400, detail="Inactive user")
@@ -225,13 +231,15 @@ auth_service = AuthService()
 
 
 # Export dependency functions for use in routes
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(get_db_session)
+) -> UserResponse:
     """Dependency to get current user"""
-    return await auth_service.get_current_user(token)
+    return await auth_service.get_current_user(token, session)
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
-) -> User:
+    current_user: UserResponse = Depends(get_current_user),
+) -> UserResponse:
     """Dependency to get current active user"""
     return await auth_service.get_current_active_user(current_user)
