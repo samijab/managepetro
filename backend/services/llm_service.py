@@ -689,40 +689,33 @@ class LLMService:
             else:
                 numeric_id = int(truck_id)
 
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    truck_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        WHERE id = %s
-                    """
-                    cursor.execute(truck_query, (numeric_id,))
-                    truck_row = cursor.fetchone()
-
-                    if not truck_row:
-                        return None
-
-                    # Get compartments
-                    compartments_query = """
-                        SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
-                        FROM truck_compartments
-                        WHERE truck_id = %s
-                        ORDER BY compartment_number
-                    """
-                    cursor.execute(compartments_query, (truck_row["id"],))
-                    compartments = cursor.fetchall()
-
-                    truck = TruckData(**truck_row, compartments=compartments)
-                    conn.commit()
-                    return truck
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
+            with get_db_session() as session:
+                truck = session.query(DBTruck).filter(DBTruck.id == numeric_id).first()
+                
+                if not truck:
                     return None
-                finally:
-                    cursor.close()
+                
+                # Get compartments using relationship
+                compartments = [
+                    {
+                        "compartment_number": c.compartment_number,
+                        "fuel_type": c.fuel_type,
+                        "capacity_liters": float(c.capacity_liters) if c.capacity_liters else None,
+                        "current_level_liters": float(c.current_level_liters) if c.current_level_liters else None,
+                    }
+                    for c in truck.compartments
+                ]
+                
+                return TruckData(
+                    id=truck.id,
+                    code=truck.code,
+                    plate=truck.plate,
+                    capacity_liters=float(truck.capacity_liters) if truck.capacity_liters else None,
+                    fuel_level_percent=truck.fuel_level_percent,
+                    fuel_type=truck.fuel_type,
+                    status=truck.status,
+                    compartments=compartments,
+                )
         except Exception as e:
             print(f"Failed to get truck: {e}")
             return None
