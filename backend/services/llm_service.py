@@ -17,12 +17,16 @@ from models.data_models import (
     RouteOptimizationResponse,
 )
 from typing import Dict, Any, Optional, List
+import logging
+import re
+from utils.serializers import station_available_dict, truck_simple_dict
 
 
 class LLMService:
     def __init__(self):
         self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         self.prompt_service = PromptService()
+        self._logger = logging.getLogger(__name__)
 
     def _extract_section(self, ai_response: str, section_name: str) -> str:
         """
@@ -125,14 +129,17 @@ class LLMService:
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
         # Debug: log ai response type/size for troubleshooting frontend display issues
         try:
-            print(
-                f"DEBUG: optimize_route received ai_response type={type(ai_response)} length={len(ai_response) if ai_response is not None else 0}"
+            self._logger.debug(
+                "optimize_route received ai_response type=%s length=%s",
+                type(ai_response),
+                len(ai_response) if ai_response is not None else 0,
             )
             if ai_response:
-                print(f"DEBUG: ai_response preview: {str(ai_response)[:300]}")
+                # Truncate preview to avoid logging excessive content
+                self._logger.debug("ai_response preview: %s", str(ai_response)[:300])
         except Exception:
             # Defensive: avoid crashing on unexpected ai_response shapes
-            print(f"DEBUG: optimize_route ai_response (repr) = {repr(ai_response)}")
+            self._logger.exception("optimize_route ai_response repr logging failed")
         return self._parse_comprehensive_response(
             ai_response, db_data, weather_data, departure_time, arrival_time, time_mode
         )
@@ -174,14 +181,18 @@ class LLMService:
             ai_response = await self._call_gemini(prompt, llm_model)
             # Debug: log ai response type/size for troubleshooting frontend display issues
             try:
-                print(
-                    f"DEBUG: optimize_dispatch received ai_response type={type(ai_response)} length={len(ai_response) if ai_response is not None else 0}"
+                self._logger.debug(
+                    "optimize_dispatch received ai_response type=%s length=%s",
+                    type(ai_response),
+                    len(ai_response) if ai_response is not None else 0,
                 )
                 if ai_response:
-                    print(f"DEBUG: ai_response preview: {str(ai_response)[:300]}")
+                    self._logger.debug(
+                        "ai_response preview: %s", str(ai_response)[:300]
+                    )
             except Exception:
-                print(
-                    f"DEBUG: optimize_dispatch ai_response (repr) = {repr(ai_response)}"
+                self._logger.exception(
+                    "optimize_dispatch ai_response repr logging failed"
                 )
 
             # Parse and return dispatch plan
@@ -304,7 +315,7 @@ class LLMService:
             return DatabaseResult(stations, deliveries, trucks)
 
         except Exception as e:
-            print(f"SQLAlchemy database query failed: {e}")
+            self._logger.exception("SQLAlchemy database query failed")
             raise
 
     async def _get_weather_data(
@@ -316,7 +327,7 @@ class LLMService:
             to_weather = await get_weather_async(to_location)
             return WeatherResult(from_weather, to_weather)
         except Exception as e:
-            print(f"Weather data failed: {e}")
+            self._logger.exception("Weather data failed")
             # Return empty weather data
             empty_weather = WeatherData("Unknown", 0, "Unknown", 0, 0)
             return WeatherResult(empty_weather, empty_weather)
@@ -363,10 +374,10 @@ class LLMService:
 
             return stations
         except SQLAlchemyError as e:
-            print(f"SQLAlchemy error getting stations: {e}")
+            self._logger.exception("SQLAlchemy error getting stations")
             return []
         except Exception as e:
-            print(f"Failed to get stations: {e}")
+            self._logger.exception("Failed to get stations")
             return []
 
     async def get_all_trucks_sqlalchemy(self, session: AsyncSession) -> list[TruckData]:
@@ -408,10 +419,10 @@ class LLMService:
 
             return trucks
         except SQLAlchemyError as e:
-            print(f"SQLAlchemy error getting trucks: {e}")
+            self._logger.exception("SQLAlchemy error getting trucks")
             return []
         except Exception as e:
-            print(f"Failed to get trucks: {e}")
+            self._logger.exception("Failed to get trucks")
             return []
 
     async def _get_truck_by_id_sqlalchemy(
@@ -419,19 +430,19 @@ class LLMService:
     ) -> Optional[TruckData]:
         """Get truck by ID using SQLAlchemy 2.0"""
         try:
-            print(f"DEBUG: Looking for truck with identifier: {truck_id}")
+            self._logger.debug("Looking for truck with identifier: %s", truck_id)
 
             # Handle different truck ID formats
             if truck_id.startswith("truck-"):
                 # Convert "truck-001" format to database ID
                 try:
                     numeric_id = int(truck_id.split("-")[1])
-                    print(
-                        f"DEBUG: Converted truck-{numeric_id:03d} to ID: {numeric_id}"
+                    self._logger.debug(
+                        "Converted truck-%03d to ID: %s", numeric_id, numeric_id
                     )
                     stmt = select(Truck).where(Truck.id == numeric_id)
                 except (ValueError, IndexError):
-                    print(f"DEBUG: Invalid truck ID format: {truck_id}")
+                    self._logger.debug("Invalid truck ID format: %s", truck_id)
                     return None
             else:
                 # Look up by code (T01, T02, etc.) or numeric ID
@@ -448,12 +459,15 @@ class LLMService:
                 all_trucks_stmt = select(Truck)
                 all_trucks_result = await session.execute(all_trucks_stmt)
                 all_trucks = all_trucks_result.scalars().all()
-                print(
-                    f"DEBUG: No truck found. Available trucks: {[(t.id, t.code) for t in all_trucks]}"
+                self._logger.debug(
+                    "No truck found. Available trucks: %s",
+                    [(t.id, t.code) for t in all_trucks],
                 )
                 return None
 
-            print(f"DEBUG: Found truck: ID={truck_orm.id}, code={truck_orm.code}")
+            self._logger.debug(
+                "Found truck: ID=%s, code=%s", truck_orm.id, truck_orm.code
+            )
             # Get compartments using SQLAlchemy relationship
             await session.refresh(truck_orm, attribute_names=["compartments"])
 
@@ -483,10 +497,10 @@ class LLMService:
                 compartments=compartments,
             )
         except SQLAlchemyError as e:
-            print(f"SQLAlchemy error getting truck by ID: {e}")
+            self._logger.exception("SQLAlchemy error getting truck by ID")
             return None
         except Exception as e:
-            print(f"Failed to get truck by ID: {e}")
+            self._logger.exception("Failed to get truck by ID")
             return None
 
     async def _get_stations_needing_refuel_sqlalchemy(
@@ -537,15 +551,17 @@ class LLMService:
 
             return stations
         except SQLAlchemyError as e:
-            print(f"SQLAlchemy error getting stations needing refuel: {e}")
+            self._logger.exception("SQLAlchemy error getting stations needing refuel")
             return []
         except Exception as e:
-            print(f"Failed to get stations needing refuel: {e}")
+            self._logger.exception("Failed to get stations needing refuel")
             return []
 
     async def _call_gemini(self, prompt: str, model: str) -> str:
         """Make the actual Gemini API call with proper error handling"""
         try:
+            # Note: wrap the SDK call in a try/except; we will normalize output
+            # to a string below and sanitize it before returning.
             response = await self.client.aio.models.generate_content(
                 model=model,
                 contents=prompt,
@@ -597,11 +613,27 @@ class LLMService:
 
             # Log basic diagnostics
             try:
-                print(
-                    f"DEBUG: Gemini response normalized type={type(ai_text)} length={len(ai_text)}"
+                self._logger.debug(
+                    "Gemini response normalized type=%s length=%s",
+                    type(ai_text),
+                    len(ai_text),
                 )
             except Exception:
-                print(f"DEBUG: Gemini response normalized repr={repr(ai_text)}")
+                self._logger.exception("Gemini response normalized repr logging failed")
+
+            # Sanitize AI text to reduce risk of script injection or accidental
+            # HTML being interpreted by clients. We remove script tags and
+            # then escape angle brackets. Frontend should still render as text.
+            try:
+                # Remove <script>...</script> blocks (case-insensitive)
+                ai_text = re.sub(
+                    r"(?i)<script.*?>.*?</script>", "", ai_text, flags=re.DOTALL
+                )
+                # Escape angle brackets to prevent any accidental HTML rendering
+                ai_text = ai_text.replace("<", "&lt;").replace(">", "&gt;")
+            except Exception:
+                # If sanitization fails, log and return the raw text as a fallback
+                self._logger.exception("Failed to sanitize ai_text")
 
             return ai_text
 
@@ -611,18 +643,18 @@ class LLMService:
                 "quota" in error_msg.lower()
                 or "resource_exhausted" in error_msg.lower()
             ):
-                print(f"Gemini API quota exceeded: {e}")
+                self._logger.exception("Gemini API quota exceeded: %s", e)
                 raise Exception(
                     "Gemini API quota exceeded. Please check your API limits or wait before retrying."
                 )
             elif "not_found" in error_msg.lower():
-                print(f"Gemini model not found: {e}")
+                self._logger.exception("Gemini model not found: %s", e)
                 raise Exception(
                     f"Model '{model}' not found. Please check if the model name is correct."
                 )
             else:
-                print(f"Gemini API call failed: {e}")
-                raise e
+                self._logger.exception("Gemini API call failed: %s", e)
+                raise
 
     def _parse_comprehensive_response(
         self,
@@ -1023,38 +1055,14 @@ class LLMService:
                 # Remove step_number from the output as it's only used for sorting
                 for stop in route_stops:
                     stop.pop("step_number", None)
-        except Exception as e:
-            print(f"Error parsing route stops: {e}")
+        except Exception:
+            self._logger.exception("Error parsing route stops")
 
         return {
             "dispatch_summary": dispatch_summary,
-            "truck": {
-                "truck_id": f"truck-{truck.id:03d}",
-                "code": truck.code,
-                "plate": truck.plate,
-                "status": truck.status,
-                "compartments": truck.compartments or [],
-            },
+            "truck": truck_simple_dict(truck),
             "depot_location": depot_location,
             "route_stops": route_stops,
-            "stations_available": [
-                {
-                    "station_id": f"station-{s.id:03d}",
-                    "name": s.name,
-                    "city": s.city,
-                    "region": s.region,
-                    "fuel_type": s.fuel_type,
-                    "current_level": s.current_level_liters,
-                    "capacity": s.capacity_liters,
-                    "fuel_level_percent": int(
-                        (s.current_level_liters / s.capacity_liters) * 100
-                    ),
-                    "request_method": s.request_method,
-                    "needs_refuel": s.needs_refuel,
-                    "lat": float(s.lat),
-                    "lon": float(s.lon),
-                }
-                for s in stations
-            ],
+            "stations_available": [station_available_dict(s) for s in stations],
             "ai_analysis": ai_response,
         }

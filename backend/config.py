@@ -46,6 +46,7 @@ class Config:
 
     # Optional Configuration
     WEATHER_CITY: str
+    LOG_LEVEL: str
 
     def __init__(self):
         """Initialize and validate all configuration from environment variables."""
@@ -118,6 +119,8 @@ class Config:
 
         # Optional Configuration (with defaults)
         self.WEATHER_CITY = os.getenv("WEATHER_CITY", "Vancouver").strip()
+        # Logging level for the application
+        self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip().upper()
 
         # If any required variables are missing, raise a clear error
         if missing_vars:
