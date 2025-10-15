@@ -6,7 +6,13 @@ from datetime import datetime
 class UserBase(BaseModel):
     """Base user model with common fields"""
 
-    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Username (3-50 chars, alphanumeric/underscore/hyphen only)",
+    )
     email: EmailStr = Field(..., description="User email address")
 
 
@@ -15,9 +21,9 @@ class UserCreate(UserBase):
 
     password: str = Field(
         ...,
-        min_length=6,
-        max_length=100,
-        description="User password (min 6 characters)",
+        min_length=8,
+        max_length=128,
+        description="User password (min 8 characters, mixed case + numbers recommended)",
     )
 
 

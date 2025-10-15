@@ -1,11 +1,12 @@
-import mysql.connector
-from mysql.connector import Error as MySQLError
-from contextlib import contextmanager
 from google import genai
 from google.genai import types
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_, or_, func, text
+from sqlalchemy.exc import SQLAlchemyError
 from .prompt_service import PromptService
-from .api_utils import get_weather
+from .api_utils import get_weather_async
 from config import config
+from models.database_models import Station, Truck, Delivery
 from models.data_models import (
     StationData,
     DeliveryData,
@@ -22,35 +23,6 @@ class LLMService:
     def __init__(self):
         self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         self.prompt_service = PromptService()
-
-        # Database configuration from centralized config
-        self.db_config = {
-            **config.get_db_config(),
-            "autocommit": True,
-            "get_warnings": True,
-        }
-
-    @contextmanager
-    def get_db_connection(self):
-        """Context manager for MySQL database connections"""
-        conn = None
-        try:
-            # Simple connection without pooling for development
-            conn = mysql.connector.connect(**self.db_config)
-            yield conn
-        except MySQLError as e:
-            if conn and conn.is_connected():
-                conn.rollback()
-            print(f"MySQL Error: {e.errno} - {e.msg}")
-            raise
-        except Exception as e:
-            if conn and conn.is_connected():
-                conn.rollback()
-            print(f"Database connection error: {e}")
-            raise
-        finally:
-            if conn and conn.is_connected():
-                conn.close()
 
     def _extract_section(self, ai_response: str, section_name: str) -> str:
         """
@@ -118,6 +90,7 @@ class LLMService:
         self,
         from_location: str,
         to_location: str,
+        session: AsyncSession,
         llm_model: str = "gemini-2.5-flash",
         departure_time: Optional[str] = None,
         arrival_time: Optional[str] = None,
@@ -126,11 +99,13 @@ class LLMService:
         vehicle_type: str = "fuel_delivery_truck",
         notes: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Generate route optimization using standardized data models"""
+        """Generate route optimization using standardized data models with SQLAlchemy 2.0"""
 
-        # Get standardized data
-        db_data = self._get_database_data(from_location, to_location)
-        weather_data = self._get_weather_data(from_location, to_location)
+        # Get standardized data using SQLAlchemy
+        db_data = await self._get_database_data_sqlalchemy(
+            session, from_location, to_location
+        )
+        weather_data = await self._get_weather_data(from_location, to_location)
 
         # Create prompt with standardized data
         comprehensive_prompt = self.prompt_service.format_comprehensive_prompt(
@@ -148,26 +123,42 @@ class LLMService:
         )
 
         ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
+        # Debug: log ai response type/size for troubleshooting frontend display issues
+        try:
+            print(
+                f"DEBUG: optimize_route received ai_response type={type(ai_response)} length={len(ai_response) if ai_response is not None else 0}"
+            )
+            if ai_response:
+                print(f"DEBUG: ai_response preview: {str(ai_response)[:300]}")
+        except Exception:
+            # Defensive: avoid crashing on unexpected ai_response shapes
+            print(f"DEBUG: optimize_route ai_response (repr) = {repr(ai_response)}")
         return self._parse_comprehensive_response(
             ai_response, db_data, weather_data, departure_time, arrival_time, time_mode
         )
 
     async def optimize_dispatch(
-        self, truck_id: str, depot_location: str, llm_model: str = "gemini-2.5-flash"
+        self,
+        truck_id: str,
+        depot_location: str,
+        session: AsyncSession,
+        llm_model: str = "gemini-2.5-flash",
     ) -> Dict[str, Any]:
-        """Optimize dispatch route for a truck to deliver fuel to stations in need"""
+        """Optimize dispatch route for a truck to deliver fuel to stations in need using SQLAlchemy 2.0"""
         try:
-            # Get truck details
-            truck = self._get_truck_by_id(truck_id)
+            # Get truck details using SQLAlchemy
+            truck = await self._get_truck_by_id_sqlalchemy(session, truck_id)
             if not truck:
                 raise ValueError(f"Truck {truck_id} not found")
 
-            # Get stations needing fuel
-            stations_needing_fuel = self._get_stations_needing_refuel()
+            # Get stations needing fuel using SQLAlchemy
+            stations_needing_fuel = await self._get_stations_needing_refuel_sqlalchemy(
+                session
+            )
 
             # Get weather for depot location
             try:
-                depot_weather = get_weather(depot_location)
+                depot_weather = await get_weather_async(depot_location)
             except:
                 depot_weather = WeatherData(depot_location, 20, "Clear", 10, 50)
 
@@ -181,6 +172,17 @@ class LLMService:
 
             # Get AI optimization
             ai_response = await self._call_gemini(prompt, llm_model)
+            # Debug: log ai response type/size for troubleshooting frontend display issues
+            try:
+                print(
+                    f"DEBUG: optimize_dispatch received ai_response type={type(ai_response)} length={len(ai_response) if ai_response is not None else 0}"
+                )
+                if ai_response:
+                    print(f"DEBUG: ai_response preview: {str(ai_response)[:300]}")
+            except Exception:
+                print(
+                    f"DEBUG: optimize_dispatch ai_response (repr) = {repr(ai_response)}"
+                )
 
             # Parse and return dispatch plan
             return self._parse_dispatch_response(
@@ -194,89 +196,124 @@ class LLMService:
             print(f"Dispatch optimization failed: {e}")
             raise
 
-    def _get_database_data(
-        self, from_location: str, to_location: str
+    async def _get_database_data_sqlalchemy(
+        self, session: AsyncSession, from_location: str, to_location: str
     ) -> DatabaseResult:
-        """Query database and return standardized data models"""
+        """Query database using SQLAlchemy 2.0 and return standardized data models"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
+            # Get stations with fuel above minimum threshold
+            stations_stmt = (
+                select(Station)
+                .where(Station.current_level_liters > 1000)
+                .order_by(Station.capacity_liters.desc())
+                .limit(10)
+            )
+            stations_result = await session.execute(stations_stmt)
+            stations_orm = stations_result.scalars().all()
+            stations = [
+                StationData(
+                    id=station.id,
+                    code=station.code,
+                    name=station.name,
+                    lat=station.lat,
+                    lon=station.lon,
+                    city=station.city,
+                    region=station.region,
+                    fuel_type=station.fuel_type,
+                    capacity_liters=station.capacity_liters,
+                    current_level_liters=station.current_level_liters,
+                )
+                for station in stations_orm
+            ]
 
-                try:
-                    # Get stations
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters
-                        FROM stations 
-                        WHERE current_level_liters > %s
-                        ORDER BY capacity_liters DESC
-                        LIMIT %s
-                    """
-                    cursor.execute(stations_query, (1000, 10))
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-
-                    # Get deliveries
-                    deliveries_query = """
-                        SELECT d.id, d.volume_liters, d.delivery_date, d.status,
-                               s.name as station_name, s.code as station_code,
-                               s.city, s.region, s.lat, s.lon,
-                               t.code as truck_code, t.plate as truck_plate
-                        FROM deliveries d
-                        JOIN stations s ON d.station_id = s.id
-                        JOIN trucks t ON d.truck_id = t.id
-                        WHERE d.delivery_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                        AND (s.city LIKE %s OR s.region LIKE %s 
-                             OR s.city LIKE %s OR s.region LIKE %s)
-                        ORDER BY d.delivery_date DESC
-                        LIMIT %s
-                    """
-                    location_params = (
-                        f"%{from_location}%",
-                        f"%{from_location}%",
-                        f"%{to_location}%",
-                        f"%{to_location}%",
-                        15,
+            # Get recent deliveries with location filtering
+            deliveries_stmt = (
+                select(
+                    Delivery.id,
+                    Delivery.volume_liters,
+                    Delivery.delivery_date,
+                    Delivery.status,
+                    Station.name.label("station_name"),
+                    Station.code.label("station_code"),
+                    Station.city,
+                    Station.region,
+                    Station.lat,
+                    Station.lon,
+                    Truck.code.label("truck_code"),
+                    Truck.plate.label("truck_plate"),
+                )
+                .join(Station, Delivery.station_id == Station.id)
+                .join(Truck, Delivery.truck_id == Truck.id)
+                .where(
+                    and_(
+                        Delivery.delivery_date
+                        >= func.date_sub(func.now(), text("INTERVAL 30 DAY")),
+                        or_(
+                            Station.city.like(f"%{from_location}%"),
+                            Station.region.like(f"%{from_location}%"),
+                            Station.city.like(f"%{to_location}%"),
+                            Station.region.like(f"%{to_location}%"),
+                        ),
                     )
-                    cursor.execute(deliveries_query, location_params)
-                    deliveries_raw = cursor.fetchall()
-                    deliveries = [DeliveryData(**row) for row in deliveries_raw]
+                )
+                .order_by(Delivery.delivery_date.desc())
+                .limit(15)
+            )
+            deliveries_result = await session.execute(deliveries_stmt)
+            deliveries_raw = deliveries_result.all()
+            deliveries = [
+                DeliveryData(
+                    id=row.id,
+                    volume_liters=row.volume_liters,
+                    delivery_date=row.delivery_date,
+                    status=row.status,
+                    station_name=row.station_name,
+                    station_code=row.station_code,
+                    city=row.city,
+                    region=row.region,
+                    lat=row.lat,
+                    lon=row.lon,
+                    truck_code=row.truck_code,
+                    truck_plate=row.truck_plate,
+                )
+                for row in deliveries_raw
+            ]
 
-                    # Get trucks
-                    trucks_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        WHERE status = %s
-                        ORDER BY capacity_liters DESC
-                        LIMIT %s
-                    """
-                    cursor.execute(trucks_query, ("active", 5))
-                    trucks_raw = cursor.fetchall()
-                    trucks = [TruckData(**row) for row in trucks_raw]
+            # Get active trucks
+            trucks_stmt = (
+                select(Truck)
+                .where(Truck.status == "active")
+                .order_by(Truck.capacity_liters.desc())
+                .limit(5)
+            )
+            trucks_result = await session.execute(trucks_stmt)
+            trucks_orm = trucks_result.scalars().all()
+            trucks = [
+                TruckData(
+                    id=truck.id,
+                    code=truck.code,
+                    plate=truck.plate,
+                    capacity_liters=truck.capacity_liters,
+                    fuel_level_percent=truck.fuel_level_percent,
+                    fuel_type=truck.fuel_type,
+                    status=truck.status,
+                )
+                for truck in trucks_orm
+            ]
 
-                    conn.commit()
-                    return DatabaseResult(stations, deliveries, trucks)
+            return DatabaseResult(stations, deliveries, trucks)
 
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
-
-        except MySQLError as e:
-            print(f"Database query failed: {e.errno} - {e.msg}")
-            return DatabaseResult([], [], [])
         except Exception as e:
-            print(f"Unexpected database error: {e}")
-            return DatabaseResult([], [], [])
+            print(f"SQLAlchemy database query failed: {e}")
+            raise
 
-    def _get_weather_data(self, from_location: str, to_location: str) -> WeatherResult:
-        """Get weather data using standardized models"""
+    async def _get_weather_data(
+        self, from_location: str, to_location: str
+    ) -> WeatherResult:
+        """Get weather data using standardized models (async)"""
         try:
-            from_weather = get_weather(from_location)
-            to_weather = get_weather(to_location)
+            from_weather = await get_weather_async(from_location)
+            to_weather = await get_weather_async(to_location)
             return WeatherResult(from_weather, to_weather)
         except Exception as e:
             print(f"Weather data failed: {e}")
@@ -284,74 +321,226 @@ class LLMService:
             empty_weather = WeatherData("Unknown", 0, "Unknown", 0, 0)
             return WeatherResult(empty_weather, empty_weather)
 
-    def get_all_stations(self):
-        """Get all stations from database for API endpoints"""
+    async def get_all_stations_sqlalchemy(
+        self, session: AsyncSession
+    ) -> list[StationData]:
+        """Get all stations using SQLAlchemy 2.0 - new method"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters,
-                               request_method, low_fuel_threshold
-                        FROM stations 
-                        ORDER BY name
-                    """
-                    cursor.execute(stations_query)
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-                    conn.commit()
-                    return stations
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
+            stmt = select(Station).order_by(Station.name)
+            result = await session.execute(stmt)
+            stations_orm = result.scalars().all()
+
+            # Convert SQLAlchemy models to data models
+            stations = []
+            for station in stations_orm:
+                station_data = StationData(
+                    id=station.id,
+                    code=station.code,
+                    name=station.name,
+                    lat=float(station.lat) if station.lat else None,
+                    lon=float(station.lon) if station.lon else None,
+                    city=station.city,
+                    region=station.region,
+                    fuel_type=station.fuel_type,
+                    capacity_liters=(
+                        float(station.capacity_liters)
+                        if station.capacity_liters
+                        else None
+                    ),
+                    current_level_liters=(
+                        float(station.current_level_liters)
+                        if station.current_level_liters
+                        else None
+                    ),
+                    request_method=station.request_method,
+                    low_fuel_threshold=(
+                        float(station.low_fuel_threshold)
+                        if station.low_fuel_threshold
+                        else None
+                    ),
+                )
+                stations.append(station_data)
+
+            return stations
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemy error getting stations: {e}")
+            return []
         except Exception as e:
             print(f"Failed to get stations: {e}")
             return []
 
-    def get_all_trucks(self):
-        """Get all trucks from database for API endpoints"""
+    async def get_all_trucks_sqlalchemy(self, session: AsyncSession) -> list[TruckData]:
+        """Get all trucks using SQLAlchemy 2.0 - new method"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    trucks_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        ORDER BY code
-                    """
-                    cursor.execute(trucks_query)
-                    trucks_raw = cursor.fetchall()
+            stmt = select(Truck).order_by(Truck.code)
+            result = await session.execute(stmt)
+            trucks_orm = result.scalars().all()
 
-                    trucks = []
-                    for truck_row in trucks_raw:
-                        # Get compartments for this truck
-                        compartments_query = """
-                            SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
-                            FROM truck_compartments
-                            WHERE truck_id = %s
-                            ORDER BY compartment_number
-                        """
-                        cursor.execute(compartments_query, (truck_row["id"],))
-                        compartments = cursor.fetchall()
+            trucks = []
+            for truck in trucks_orm:
+                # Get compartments using SQLAlchemy relationship
+                await session.refresh(truck, attribute_names=["compartments"])
 
-                        truck = TruckData(**truck_row, compartments=compartments)
-                        trucks.append(truck)
+                compartments = []
+                for comp in truck.compartments:
+                    compartments.append(
+                        {
+                            "compartment_number": comp.compartment_number,
+                            "fuel_type": comp.fuel_type,
+                            "capacity_liters": float(comp.capacity_liters),
+                            "current_level_liters": float(comp.current_level_liters),
+                        }
+                    )
 
-                    conn.commit()
-                    return trucks
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
+                truck_data = TruckData(
+                    id=truck.id,
+                    code=truck.code,
+                    plate=truck.plate,
+                    capacity_liters=(
+                        float(truck.capacity_liters) if truck.capacity_liters else None
+                    ),
+                    fuel_level_percent=truck.fuel_level_percent,
+                    fuel_type=truck.fuel_type,
+                    status=truck.status,
+                    compartments=compartments,
+                )
+                trucks.append(truck_data)
+
+            return trucks
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemy error getting trucks: {e}")
+            return []
         except Exception as e:
             print(f"Failed to get trucks: {e}")
+            return []
+
+    async def _get_truck_by_id_sqlalchemy(
+        self, session: AsyncSession, truck_id: str
+    ) -> Optional[TruckData]:
+        """Get truck by ID using SQLAlchemy 2.0"""
+        try:
+            print(f"DEBUG: Looking for truck with identifier: {truck_id}")
+
+            # Handle different truck ID formats
+            if truck_id.startswith("truck-"):
+                # Convert "truck-001" format to database ID
+                try:
+                    numeric_id = int(truck_id.split("-")[1])
+                    print(
+                        f"DEBUG: Converted truck-{numeric_id:03d} to ID: {numeric_id}"
+                    )
+                    stmt = select(Truck).where(Truck.id == numeric_id)
+                except (ValueError, IndexError):
+                    print(f"DEBUG: Invalid truck ID format: {truck_id}")
+                    return None
+            else:
+                # Look up by code (T01, T02, etc.) or numeric ID
+                if truck_id.isdigit():
+                    stmt = select(Truck).where(Truck.id == int(truck_id))
+                else:
+                    stmt = select(Truck).where(Truck.code == truck_id)
+
+            result = await session.execute(stmt)
+            truck_orm = result.scalar_one_or_none()
+
+            if not truck_orm:
+                # Debug: show available trucks
+                all_trucks_stmt = select(Truck)
+                all_trucks_result = await session.execute(all_trucks_stmt)
+                all_trucks = all_trucks_result.scalars().all()
+                print(
+                    f"DEBUG: No truck found. Available trucks: {[(t.id, t.code) for t in all_trucks]}"
+                )
+                return None
+
+            print(f"DEBUG: Found truck: ID={truck_orm.id}, code={truck_orm.code}")
+            # Get compartments using SQLAlchemy relationship
+            await session.refresh(truck_orm, attribute_names=["compartments"])
+
+            compartments = []
+            for comp in truck_orm.compartments:
+                compartments.append(
+                    {
+                        "compartment_number": comp.compartment_number,
+                        "fuel_type": comp.fuel_type,
+                        "capacity_liters": float(comp.capacity_liters),
+                        "current_level_liters": float(comp.current_level_liters),
+                    }
+                )
+
+            return TruckData(
+                id=truck_orm.id,
+                code=truck_orm.code,
+                plate=truck_orm.plate,
+                capacity_liters=(
+                    float(truck_orm.capacity_liters)
+                    if truck_orm.capacity_liters
+                    else None
+                ),
+                fuel_level_percent=truck_orm.fuel_level_percent,
+                fuel_type=truck_orm.fuel_type,
+                status=truck_orm.status,
+                compartments=compartments,
+            )
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemy error getting truck by ID: {e}")
+            return None
+        except Exception as e:
+            print(f"Failed to get truck by ID: {e}")
+            return None
+
+    async def _get_stations_needing_refuel_sqlalchemy(
+        self, session: AsyncSession
+    ) -> List[StationData]:
+        """Get stations that need refueling using SQLAlchemy 2.0"""
+        try:
+            # Calculate fuel percentage and filter for low fuel stations
+            stmt = (
+                select(Station)
+                .where(
+                    and_(
+                        Station.current_level_liters.isnot(None),
+                        Station.capacity_liters.isnot(None),
+                        Station.capacity_liters > 0,
+                        Station.low_fuel_threshold.isnot(None),
+                        Station.current_level_liters < Station.low_fuel_threshold,
+                    )
+                )
+                .order_by(
+                    # Order by urgency - lowest fuel percentage first
+                    (Station.current_level_liters / Station.capacity_liters).asc()
+                )
+            )
+
+            result = await session.execute(stmt)
+            stations_orm = result.scalars().all()
+
+            stations = []
+            for station in stations_orm:
+                station_data = StationData(
+                    id=station.id,
+                    code=station.code,
+                    name=station.name,
+                    lat=station.lat,
+                    lon=station.lon,
+                    city=station.city,
+                    region=station.region,
+                    fuel_type=station.fuel_type,
+                    capacity_liters=station.capacity_liters,
+                    current_level_liters=station.current_level_liters,
+                    request_method=station.request_method,
+                    low_fuel_threshold=station.low_fuel_threshold,
+                    needs_refuel=station.current_level_liters
+                    < station.low_fuel_threshold,
+                )
+                stations.append(station_data)
+
+            return stations
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemy error getting stations needing refuel: {e}")
+            return []
+        except Exception as e:
+            print(f"Failed to get stations needing refuel: {e}")
             return []
 
     async def _call_gemini(self, prompt: str, model: str) -> str:
@@ -366,7 +555,55 @@ class LLMService:
                 ),
             )
 
-            return response.text
+            # Normalize response into a plain string so downstream code and the
+            # frontend always receive a consistent `ai_analysis` field.
+            ai_text = ""
+
+            # Preferred attribute used in existing code
+            if response is None:
+                ai_text = ""
+            elif hasattr(response, "text"):
+                # Some client versions provide `text` as the generated content
+                ai_text = response.text or ""
+            else:
+                # Fallbacks: try common container shapes then str()
+                try:
+                    # Some SDKs return `outputs` or `output` lists
+                    if hasattr(response, "outputs"):
+                        parts = []
+                        for out in getattr(response, "outputs"):
+                            if hasattr(out, "text"):
+                                parts.append(out.text)
+                            elif isinstance(out, str):
+                                parts.append(out)
+                        ai_text = "\n".join(parts)
+                    elif hasattr(response, "output"):
+                        parts = []
+                        for out in getattr(response, "output"):
+                            # nested shapes
+                            if isinstance(out, dict):
+                                # try common keys
+                                for key in ("content", "text", "message"):
+                                    if key in out:
+                                        parts.append(str(out[key]))
+                            elif isinstance(out, str):
+                                parts.append(out)
+                        ai_text = "\n".join(parts)
+                    else:
+                        ai_text = str(response)
+                except Exception:
+                    # Last resort: stringify the whole response
+                    ai_text = str(response)
+
+            # Log basic diagnostics
+            try:
+                print(
+                    f"DEBUG: Gemini response normalized type={type(ai_text)} length={len(ai_text)}"
+                )
+            except Exception:
+                print(f"DEBUG: Gemini response normalized repr={repr(ai_text)}")
+
+            return ai_text
 
         except Exception as e:
             error_msg = str(e)
@@ -682,83 +919,6 @@ class LLMService:
             print(f"Error parsing traffic info: {e}")
 
         return traffic_info
-
-    def _get_truck_by_id(self, truck_id: str) -> Optional[TruckData]:
-        """Get a specific truck by ID"""
-        try:
-            # Extract numeric ID from truck_id (e.g., "truck-001" -> 1)
-            if truck_id.startswith("truck-"):
-                numeric_id = int(truck_id.split("-")[1])
-            else:
-                numeric_id = int(truck_id)
-
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    truck_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        WHERE id = %s
-                    """
-                    cursor.execute(truck_query, (numeric_id,))
-                    truck_row = cursor.fetchone()
-
-                    if not truck_row:
-                        return None
-
-                    # Get compartments
-                    compartments_query = """
-                        SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
-                        FROM truck_compartments
-                        WHERE truck_id = %s
-                        ORDER BY compartment_number
-                    """
-                    cursor.execute(compartments_query, (truck_row["id"],))
-                    compartments = cursor.fetchall()
-
-                    truck = TruckData(**truck_row, compartments=compartments)
-                    conn.commit()
-                    return truck
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    return None
-                finally:
-                    cursor.close()
-        except Exception as e:
-            print(f"Failed to get truck: {e}")
-            return None
-
-    def _get_stations_needing_refuel(self) -> List[StationData]:
-        """Get all stations that need refuelling"""
-        try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters,
-                               request_method, low_fuel_threshold
-                        FROM stations 
-                        WHERE current_level_liters < COALESCE(low_fuel_threshold, 5000)
-                        ORDER BY (current_level_liters / capacity_liters) ASC
-                        LIMIT 20
-                    """
-                    cursor.execute(stations_query)
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-                    conn.commit()
-                    return stations
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    return []
-                finally:
-                    cursor.close()
-        except Exception as e:
-            print(f"Failed to get stations: {e}")
-            return []
 
     def _create_dispatch_prompt(
         self,
