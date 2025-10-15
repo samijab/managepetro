@@ -1,8 +1,9 @@
 import time
 import requests
-import mysql.connector
+from sqlalchemy.exc import SQLAlchemyError
 from models.data_models import WeatherData
-from config import config
+from models.db_models import WeatherData as DBWeatherData
+from config import config, get_db_session
 
 
 def fetch_weather() -> WeatherData:
@@ -22,29 +23,25 @@ def fetch_weather() -> WeatherData:
 
 def save_to_db(weather: WeatherData):
     """Save weather data to database using standardized structure"""
-    db_config = config.get_db_config()
-    conn = mysql.connector.connect(**db_config)
-    cur = conn.cursor()
-
-    db_data = weather.to_db_dict()
-    cur.execute(
-        """
-        INSERT INTO weather_data (city, temperature, condition, wind, humidity, collected_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """,
-        (
-            db_data["city"],
-            db_data["temperature"],
-            db_data["condition"],
-            db_data["wind"],
-            db_data["humidity"],
-            db_data["collected_at"],
-        ),
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        with get_db_session() as session:
+            db_data = weather.to_db_dict()
+            
+            db_weather = DBWeatherData(
+                city=db_data["city"],
+                temperature=db_data["temperature"],
+                condition=db_data["condition"],
+                wind=db_data["wind"],
+                humidity=db_data["humidity"],
+                collected_at=db_data["collected_at"],
+            )
+            
+            session.add(db_weather)
+            # Session will commit automatically via context manager
+            
+    except SQLAlchemyError as e:
+        print(f"Database error while saving weather data: {e}")
+        raise
 
 
 if __name__ == "__main__":

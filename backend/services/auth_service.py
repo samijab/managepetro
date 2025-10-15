@@ -5,11 +5,12 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from jwt.exceptions import InvalidTokenError, DecodeError
-import mysql.connector
-from mysql.connector import Error
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from models.auth_models import UserInDB, TokenData, User
-from config import config
+from models.db_models import User as DBUser
+from config import config, get_db_session
 
 # Initialize password hashing
 password_hash = PasswordHash.recommended()
@@ -20,18 +21,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 class AuthService:
     def __init__(self):
-        self.db_config = config.get_db_config()
-
-    def get_db_connection(self):
-        """Get database connection"""
-        try:
-            connection = mysql.connector.connect(**self.db_config)
-            return connection
-        except Error as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database connection error: {str(e)}",
-            )
+        pass
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
@@ -43,57 +33,52 @@ class AuthService:
 
     def get_user_by_username(self, username: str) -> Optional[UserInDB]:
         """Get user by username from database"""
-        connection = None
         try:
-            connection = self.get_db_connection()
-            cursor = connection.cursor(dictionary=True)
+            with get_db_session() as session:
+                db_user = session.query(DBUser).filter(DBUser.username == username).first()
+                
+                if db_user:
+                    return UserInDB(
+                        id=db_user.id,
+                        username=db_user.username,
+                        email=db_user.email,
+                        hashed_password=db_user.hashed_password,
+                        is_active=db_user.is_active,
+                        created_at=db_user.created_at,
+                    )
+                return None
 
-            query = "SELECT * FROM users WHERE username = %s"
-            cursor.execute(query, (username,))
-            user_data = cursor.fetchone()
-
-            if user_data:
-                return UserInDB(**user_data)
-            return None
-
-        except Error as e:
+        except SQLAlchemyError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
     def get_user_by_email(self, email: str) -> Optional[UserInDB]:
         """Get user by email from database"""
-        connection = None
         try:
-            connection = self.get_db_connection()
-            cursor = connection.cursor(dictionary=True)
+            with get_db_session() as session:
+                db_user = session.query(DBUser).filter(DBUser.email == email).first()
+                
+                if db_user:
+                    return UserInDB(
+                        id=db_user.id,
+                        username=db_user.username,
+                        email=db_user.email,
+                        hashed_password=db_user.hashed_password,
+                        is_active=db_user.is_active,
+                        created_at=db_user.created_at,
+                    )
+                return None
 
-            query = "SELECT * FROM users WHERE email = %s"
-            cursor.execute(query, (email,))
-            user_data = cursor.fetchone()
-
-            if user_data:
-                return UserInDB(**user_data)
-            return None
-
-        except Error as e:
+        except SQLAlchemyError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
     def create_user(self, username: str, email: str, password: str) -> UserInDB:
         """Create a new user in the database"""
-        connection = None
         try:
             # Check if username or email already exists
             if self.get_user_by_username(username):
@@ -108,43 +93,35 @@ class AuthService:
                     detail="Email already registered",
                 )
 
-            connection = self.get_db_connection()
-            cursor = connection.cursor()
-
             hashed_password = self.get_password_hash(password)
+            created_at = datetime.now(timezone.utc)
 
-            query = """
-                INSERT INTO users (username, email, hashed_password, is_active, created_at)
-                VALUES (%s, %s, %s, %s, %s)
-            """
-            created_at = datetime.now(timezone.utc).isoformat()
+            with get_db_session() as session:
+                db_user = DBUser(
+                    username=username,
+                    email=email,
+                    hashed_password=hashed_password,
+                    is_active=True,
+                    created_at=created_at,
+                )
+                session.add(db_user)
+                session.flush()  # Flush to get the ID
 
-            cursor.execute(query, (username, email, hashed_password, True, created_at))
-            connection.commit()
+                # Return the created user
+                return UserInDB(
+                    id=db_user.id,
+                    username=db_user.username,
+                    email=db_user.email,
+                    hashed_password=db_user.hashed_password,
+                    is_active=db_user.is_active,
+                    created_at=db_user.created_at,
+                )
 
-            user_id = cursor.lastrowid
-
-            # Return the created user
-            return UserInDB(
-                id=user_id,
-                username=username,
-                email=email,
-                hashed_password=hashed_password,
-                is_active=True,
-                created_at=created_at,
-            )
-
-        except Error as e:
-            if connection:
-                connection.rollback()
+        except SQLAlchemyError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}",
             )
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
 
     def authenticate_user(self, username: str, password: str) -> Optional[UserInDB]:
         """Authenticate user with username/email and password"""

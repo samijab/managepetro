@@ -8,6 +8,10 @@ practices for Python environment variable management.
 
 import os
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from contextlib import contextmanager
+from typing import Generator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -147,6 +151,7 @@ class Config:
     def get_db_config(self) -> dict:
         """
         Get database configuration as a dictionary suitable for mysql.connector.
+        Deprecated: Use get_database_url() for SQLAlchemy instead.
 
         Returns:
             dict: Database configuration dictionary
@@ -162,6 +167,58 @@ class Config:
             "autocommit": False,
             "connection_timeout": 10,
         }
+
+    def get_database_url(self) -> str:
+        """
+        Get SQLAlchemy database URL for MySQL/MariaDB.
+
+        Returns:
+            str: Database connection URL for SQLAlchemy
+        """
+        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+
+
+# Database engine and session management
+def create_db_engine():
+    """Create SQLAlchemy database engine with proper configuration"""
+    from sqlalchemy import create_engine
+    
+    engine = create_engine(
+        config.get_database_url(),
+        pool_pre_ping=True,  # Verify connections before using
+        pool_recycle=3600,   # Recycle connections after 1 hour
+        echo=False,          # Set to True for SQL query logging
+    )
+    return engine
+
+
+def create_session_factory():
+    """Create SQLAlchemy session factory"""
+    from sqlalchemy.orm import sessionmaker
+    
+    engine = create_db_engine()
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+@contextmanager
+def get_db_session() -> Generator[Session, None, None]:
+    """
+    Context manager for database sessions with automatic cleanup.
+    
+    Usage:
+        with get_db_session() as session:
+            user = session.query(User).filter_by(username="admin").first()
+    """
+    SessionLocal = create_session_factory()
+    session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 # Create a singleton instance that will be imported throughout the application

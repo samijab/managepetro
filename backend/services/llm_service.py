@@ -1,11 +1,11 @@
-import mysql.connector
-from mysql.connector import Error as MySQLError
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from contextlib import contextmanager
 from google import genai
 from google.genai import types
 from .prompt_service import PromptService
 from .api_utils import get_weather
-from config import config
+from config import config, get_db_session
 from models.data_models import (
     StationData,
     DeliveryData,
@@ -15,6 +15,11 @@ from models.data_models import (
     WeatherData,
     RouteOptimizationResponse,
 )
+from models.db_models import (
+    Station as DBStation,
+    Truck as DBTruck,
+    Delivery as DBDelivery,
+)
 from typing import Dict, Any, Optional, List
 
 
@@ -22,35 +27,6 @@ class LLMService:
     def __init__(self):
         self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         self.prompt_service = PromptService()
-
-        # Database configuration from centralized config
-        self.db_config = {
-            **config.get_db_config(),
-            "autocommit": True,
-            "get_warnings": True,
-        }
-
-    @contextmanager
-    def get_db_connection(self):
-        """Context manager for MySQL database connections"""
-        conn = None
-        try:
-            # Simple connection without pooling for development
-            conn = mysql.connector.connect(**self.db_config)
-            yield conn
-        except MySQLError as e:
-            if conn and conn.is_connected():
-                conn.rollback()
-            print(f"MySQL Error: {e.errno} - {e.msg}")
-            raise
-        except Exception as e:
-            if conn and conn.is_connected():
-                conn.rollback()
-            print(f"Database connection error: {e}")
-            raise
-        finally:
-            if conn and conn.is_connected():
-                conn.close()
 
     def _extract_section(self, ai_response: str, section_name: str) -> str:
         """
@@ -199,74 +175,102 @@ class LLMService:
     ) -> DatabaseResult:
         """Query database and return standardized data models"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-
-                try:
-                    # Get stations
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters
-                        FROM stations 
-                        WHERE current_level_liters > %s
-                        ORDER BY capacity_liters DESC
-                        LIMIT %s
-                    """
-                    cursor.execute(stations_query, (1000, 10))
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-
-                    # Get deliveries
-                    deliveries_query = """
-                        SELECT d.id, d.volume_liters, d.delivery_date, d.status,
-                               s.name as station_name, s.code as station_code,
-                               s.city, s.region, s.lat, s.lon,
-                               t.code as truck_code, t.plate as truck_plate
-                        FROM deliveries d
-                        JOIN stations s ON d.station_id = s.id
-                        JOIN trucks t ON d.truck_id = t.id
-                        WHERE d.delivery_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                        AND (s.city LIKE %s OR s.region LIKE %s 
-                             OR s.city LIKE %s OR s.region LIKE %s)
-                        ORDER BY d.delivery_date DESC
-                        LIMIT %s
-                    """
-                    location_params = (
-                        f"%{from_location}%",
-                        f"%{from_location}%",
-                        f"%{to_location}%",
-                        f"%{to_location}%",
-                        15,
+            with get_db_session() as session:
+                # Get stations
+                stations = (
+                    session.query(DBStation)
+                    .filter(DBStation.current_level_liters > 1000)
+                    .order_by(DBStation.capacity_liters.desc())
+                    .limit(10)
+                    .all()
+                )
+                
+                stations_data = [
+                    StationData(
+                        id=s.id,
+                        code=s.code,
+                        name=s.name,
+                        lat=float(s.lat) if s.lat else None,
+                        lon=float(s.lon) if s.lon else None,
+                        city=s.city,
+                        region=s.region,
+                        fuel_type=s.fuel_type,
+                        capacity_liters=float(s.capacity_liters) if s.capacity_liters else None,
+                        current_level_liters=float(s.current_level_liters) if s.current_level_liters else None,
                     )
-                    cursor.execute(deliveries_query, location_params)
-                    deliveries_raw = cursor.fetchall()
-                    deliveries = [DeliveryData(**row) for row in deliveries_raw]
+                    for s in stations
+                ]
 
-                    # Get trucks
-                    trucks_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        WHERE status = %s
-                        ORDER BY capacity_liters DESC
-                        LIMIT %s
-                    """
-                    cursor.execute(trucks_query, ("active", 5))
-                    trucks_raw = cursor.fetchall()
-                    trucks = [TruckData(**row) for row in trucks_raw]
+                # Get deliveries with joins
+                from sqlalchemy import and_, or_
+                from datetime import datetime, timedelta
+                
+                thirty_days_ago = datetime.now() - timedelta(days=30)
+                
+                deliveries = (
+                    session.query(DBDelivery)
+                    .join(DBStation, DBDelivery.station_id == DBStation.id)
+                    .join(DBTruck, DBDelivery.truck_id == DBTruck.id)
+                    .filter(
+                        and_(
+                            DBDelivery.delivery_date >= thirty_days_ago,
+                            or_(
+                                DBStation.city.like(f"%{from_location}%"),
+                                DBStation.region.like(f"%{from_location}%"),
+                                DBStation.city.like(f"%{to_location}%"),
+                                DBStation.region.like(f"%{to_location}%"),
+                            )
+                        )
+                    )
+                    .order_by(DBDelivery.delivery_date.desc())
+                    .limit(15)
+                    .all()
+                )
+                
+                deliveries_data = [
+                    DeliveryData(
+                        id=d.id,
+                        volume_liters=float(d.volume_liters) if d.volume_liters else None,
+                        delivery_date=d.delivery_date,
+                        status=d.status,
+                        station_name=d.station.name,
+                        station_code=d.station.code,
+                        city=d.station.city,
+                        region=d.station.region,
+                        lat=float(d.station.lat) if d.station.lat else None,
+                        lon=float(d.station.lon) if d.station.lon else None,
+                        truck_code=d.truck.code,
+                        truck_plate=d.truck.plate,
+                    )
+                    for d in deliveries
+                ]
 
-                    conn.commit()
-                    return DatabaseResult(stations, deliveries, trucks)
+                # Get trucks
+                trucks = (
+                    session.query(DBTruck)
+                    .filter(DBTruck.status == "active")
+                    .order_by(DBTruck.capacity_liters.desc())
+                    .limit(5)
+                    .all()
+                )
+                
+                trucks_data = [
+                    TruckData(
+                        id=t.id,
+                        code=t.code,
+                        plate=t.plate,
+                        capacity_liters=float(t.capacity_liters) if t.capacity_liters else None,
+                        fuel_level_percent=t.fuel_level_percent,
+                        fuel_type=t.fuel_type,
+                        status=t.status,
+                    )
+                    for t in trucks
+                ]
 
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
+                return DatabaseResult(stations_data, deliveries_data, trucks_data)
 
-        except MySQLError as e:
-            print(f"Database query failed: {e.errno} - {e.msg}")
+        except SQLAlchemyError as e:
+            print(f"Database query failed: {e}")
             return DatabaseResult([], [], [])
         except Exception as e:
             print(f"Unexpected database error: {e}")
@@ -287,27 +291,26 @@ class LLMService:
     def get_all_stations(self):
         """Get all stations from database for API endpoints"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters,
-                               request_method, low_fuel_threshold
-                        FROM stations 
-                        ORDER BY name
-                    """
-                    cursor.execute(stations_query)
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-                    conn.commit()
-                    return stations
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
+            with get_db_session() as session:
+                stations = session.query(DBStation).order_by(DBStation.name).all()
+                
+                return [
+                    StationData(
+                        id=s.id,
+                        code=s.code,
+                        name=s.name,
+                        lat=float(s.lat) if s.lat else None,
+                        lon=float(s.lon) if s.lon else None,
+                        city=s.city,
+                        region=s.region,
+                        fuel_type=s.fuel_type,
+                        capacity_liters=float(s.capacity_liters) if s.capacity_liters else None,
+                        current_level_liters=float(s.current_level_liters) if s.current_level_liters else None,
+                        request_method=s.request_method,
+                        low_fuel_threshold=float(s.low_fuel_threshold) if s.low_fuel_threshold else None,
+                    )
+                    for s in stations
+                ]
         except Exception as e:
             print(f"Failed to get stations: {e}")
             return []
@@ -315,41 +318,35 @@ class LLMService:
     def get_all_trucks(self):
         """Get all trucks from database for API endpoints"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    trucks_query = """
-                        SELECT id, code, plate, capacity_liters,
-                               fuel_level_percent, fuel_type, status
-                        FROM trucks
-                        ORDER BY code
-                    """
-                    cursor.execute(trucks_query)
-                    trucks_raw = cursor.fetchall()
-
-                    trucks = []
-                    for truck_row in trucks_raw:
-                        # Get compartments for this truck
-                        compartments_query = """
-                            SELECT compartment_number, fuel_type, capacity_liters, current_level_liters
-                            FROM truck_compartments
-                            WHERE truck_id = %s
-                            ORDER BY compartment_number
-                        """
-                        cursor.execute(compartments_query, (truck_row["id"],))
-                        compartments = cursor.fetchall()
-
-                        truck = TruckData(**truck_row, compartments=compartments)
-                        trucks.append(truck)
-
-                    conn.commit()
-                    return trucks
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    raise
-                finally:
-                    cursor.close()
+            with get_db_session() as session:
+                trucks = session.query(DBTruck).order_by(DBTruck.code).all()
+                
+                trucks_data = []
+                for truck in trucks:
+                    # Get compartments for this truck using relationship
+                    compartments = [
+                        {
+                            "compartment_number": c.compartment_number,
+                            "fuel_type": c.fuel_type,
+                            "capacity_liters": float(c.capacity_liters) if c.capacity_liters else None,
+                            "current_level_liters": float(c.current_level_liters) if c.current_level_liters else None,
+                        }
+                        for c in truck.compartments
+                    ]
+                    
+                    truck_data = TruckData(
+                        id=truck.id,
+                        code=truck.code,
+                        plate=truck.plate,
+                        capacity_liters=float(truck.capacity_liters) if truck.capacity_liters else None,
+                        fuel_level_percent=truck.fuel_level_percent,
+                        fuel_type=truck.fuel_type,
+                        status=truck.status,
+                        compartments=compartments,
+                    )
+                    trucks_data.append(truck_data)
+                
+                return trucks_data
         except Exception as e:
             print(f"Failed to get trucks: {e}")
             return []
@@ -733,29 +730,38 @@ class LLMService:
     def _get_stations_needing_refuel(self) -> List[StationData]:
         """Get all stations that need refuelling"""
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor(dictionary=True, buffered=True)
-                try:
-                    stations_query = """
-                        SELECT id, code, name, lat, lon, city, region, 
-                               fuel_type, capacity_liters, current_level_liters,
-                               request_method, low_fuel_threshold
-                        FROM stations 
-                        WHERE current_level_liters < COALESCE(low_fuel_threshold, 5000)
-                        ORDER BY (current_level_liters / capacity_liters) ASC
-                        LIMIT 20
-                    """
-                    cursor.execute(stations_query)
-                    stations_raw = cursor.fetchall()
-                    stations = [StationData(**row) for row in stations_raw]
-                    conn.commit()
-                    return stations
-                except MySQLError as e:
-                    conn.rollback()
-                    print(f"Query execution failed: {e.errno} - {e.msg}")
-                    return []
-                finally:
-                    cursor.close()
+            with get_db_session() as session:
+                from sqlalchemy import func, case
+                
+                stations = (
+                    session.query(DBStation)
+                    .filter(
+                        DBStation.current_level_liters < func.coalesce(DBStation.low_fuel_threshold, 5000)
+                    )
+                    .order_by(
+                        (DBStation.current_level_liters / DBStation.capacity_liters).asc()
+                    )
+                    .limit(20)
+                    .all()
+                )
+                
+                return [
+                    StationData(
+                        id=s.id,
+                        code=s.code,
+                        name=s.name,
+                        lat=float(s.lat) if s.lat else None,
+                        lon=float(s.lon) if s.lon else None,
+                        city=s.city,
+                        region=s.region,
+                        fuel_type=s.fuel_type,
+                        capacity_liters=float(s.capacity_liters) if s.capacity_liters else None,
+                        current_level_liters=float(s.current_level_liters) if s.current_level_liters else None,
+                        request_method=s.request_method,
+                        low_fuel_threshold=float(s.low_fuel_threshold) if s.low_fuel_threshold else None,
+                    )
+                    for s in stations
+                ]
         except Exception as e:
             print(f"Failed to get stations: {e}")
             return []
