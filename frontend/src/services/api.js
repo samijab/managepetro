@@ -97,18 +97,7 @@ api.interceptors.response.use(
  * @property {Object} dataSources - Data sources
  */
 
-// Optional auth header from localStorage
-/**
- * Request interceptor to attach Authorization header when token exists.
- * Reads token from localStorage key "authToken".
- * @param {import('axios').InternalAxiosRequestConfig} config
- * @returns {import('axios').InternalAxiosRequestConfig}
- */
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("authToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// (Already attached above) Axios will include Authorization header using localStorage key "token".
 
 // Optional error normalization
 /**

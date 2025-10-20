@@ -9,41 +9,41 @@ function AvailableTrucksCard({ trucks }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
           Available Trucks
         </h3>
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <span className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
           {validTrucks.length} available
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {validTrucks.map((truck, index) => (
           <div
             key={truck.truck_id || index}
-            className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+            className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
           >
             <div className="flex-shrink-0 mt-1">
-              <TruckIcon className="w-5 h-5 text-green-500" />
+              <TruckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                     {truck.plate_number || truck.truck_id}
                   </p>
                   {truck.code && (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">
                       {truck.code}
                     </p>
                   )}
                 </div>
                 {truck.status && (
                   <span
-                    className={`text-xs font-medium px-2 py-1 rounded ${
+                    className={`text-xs font-medium px-2 py-1 rounded flex-shrink-0 ml-2 ${
                       truck.status === "active"
                         ? "bg-green-100 text-green-800"
                         : truck.status === "maintenance"

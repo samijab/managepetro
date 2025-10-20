@@ -61,17 +61,17 @@ function DynamicTable({ data, columns, onFilter, showFilters = true }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
       {/* Table Header with Filters */}
       {showFilters && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 sm:p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
               {data.length} Results
             </h3>
             <button
               onClick={onFilter}
-              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 sm:px-4 py-2 rounded-lg transition-colors"
             >
               <FunnelIcon className="w-4 h-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Filters</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700">Filters</span>
             </button>
           </div>
         </div>
@@ -85,7 +85,7 @@ function DynamicTable({ data, columns, onFilter, showFilters = true }) {
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                  className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                     column.sortable !== false
                       ? "cursor-pointer hover:bg-gray-100"
                       : ""
@@ -110,7 +110,7 @@ function DynamicTable({ data, columns, onFilter, showFilters = true }) {
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900"
                   >
                     {renderCellContent(item, column)}
                   </td>
@@ -123,8 +123,8 @@ function DynamicTable({ data, columns, onFilter, showFilters = true }) {
 
       {/* Empty State */}
       {data.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No data available</p>
+        <div className="text-center py-8 sm:py-12">
+          <p className="text-sm sm:text-base text-gray-500">No data available</p>
         </div>
       )}
     </div>
