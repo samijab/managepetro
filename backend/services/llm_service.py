@@ -1,5 +1,5 @@
-from google import genai
-from google.genai import types
+# from google import genai
+# from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,11 +20,13 @@ from typing import Dict, Any, Optional, List
 import logging
 import re
 from utils.serializers import station_available_dict, truck_simple_dict
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from .lc_router import get_chat_model
 
 
 class LLMService:
     def __init__(self):
-        self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         self.prompt_service = PromptService()
         self._logger = logging.getLogger(__name__)
 
@@ -126,7 +128,7 @@ class LLMService:
             notes=notes,
         )
 
-        ai_response = await self._call_gemini(comprehensive_prompt, llm_model)
+        ai_response = await self._call_llm(comprehensive_prompt, llm_model)
         # Debug: log ai response type/size for troubleshooting frontend display issues
         try:
             self._logger.debug(
@@ -178,7 +180,7 @@ class LLMService:
             )
 
             # Get AI optimization
-            ai_response = await self._call_gemini(prompt, llm_model)
+            ai_response = await self._call_llm(prompt, llm_model)
             # Debug: log ai response type/size for troubleshooting frontend display issues
             try:
                 self._logger.debug(
@@ -655,6 +657,28 @@ class LLMService:
             else:
                 self._logger.exception("Gemini API call failed: %s", e)
                 raise
+    async def _call_llm(self, prompt: str, model_id: str) -> str:
+        """
+        Generic async LLM call via LangChain with multi-provider support
+        (OpenAI, Anthropic, or Google Gemini)
+        """
+        try:
+            chat = get_chat_model(model_id, temperature=0.2)
+
+            prompt_template = ChatPromptTemplate.from_template("{input}")
+            chain = prompt_template | chat | StrOutputParser()
+
+            result = await chain.ainvoke({"input": prompt})
+
+            # Sanitize basic HTML/Markdown
+            import re
+            result = re.sub(r"(?i)<script.*?>.*?</script>", "", result, flags=re.DOTALL)
+            result = result.replace("<", "&lt;").replace(">", "&gt;")
+
+            return result.strip()
+        except Exception as e:
+            self._logger.exception("LLM call failed: %s", e)
+            raise Exception(f"LLM call failed: {e}")
 
     def _parse_comprehensive_response(
         self,

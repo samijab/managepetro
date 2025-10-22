@@ -10,13 +10,20 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import managePetroLogo from "../assets/manage-petro-logo.png";
 
+
 const llmOptions = [
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { value: "gpt-4", label: "GPT-4" },
-  { value: "claude-3", label: "Claude 3" },
-  { value: "gemini-pro", label: "Gemini Pro" },
-  { value: "llama-2", label: "Llama 2" },
+  { value: "google:gemini-1.5-pro", label: "Google Gemini 1.5 Pro" },
+  { value: "openai:gpt-4o-mini", label: "OpenAI GPT-4o Mini" },
+  { value: "anthropic:claude-3-5-sonnet-latest", label: "Anthropic Claude 3.5 Sonnet" },
 ];
+
+// const llmOptions = [
+//   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+//   { value: "gpt-4", label: "GPT-4" },
+//   { value: "claude-3", label: "Claude 3" },
+//   { value: "gemini-pro", label: "Gemini Pro" },
+//   { value: "llama-2", label: "Llama 2" },
+// ];
 
 const pageConfig = {
   "/": { showLLMDropdown: true },

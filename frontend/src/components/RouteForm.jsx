@@ -103,12 +103,6 @@ function RouteForm({ onSubmit, isLoading = false }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-<<<<<<< HEAD
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* From */}
-          <div className="space-y-2 relative">
-            <label htmlFor="from" className="block text-sm font-medium text-gray-700">
-=======
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* From Input */}
           <div className="space-y-2">
@@ -116,7 +110,6 @@ function RouteForm({ onSubmit, isLoading = false }) {
               htmlFor="from"
               className="block text-xs sm:text-sm font-medium text-gray-700"
             >
->>>>>>> 9bdda7032d991f1afd7a5a66774069c13d22f220
               From
             </label>
             <div className="relative">
@@ -154,18 +147,12 @@ function RouteForm({ onSubmit, isLoading = false }) {
             )}
           </div>
 
-<<<<<<< HEAD
-          {/* To */}
-          <div className="space-y-2 relative">
-            <label htmlFor="to" className="block text-sm font-medium text-gray-700">
-=======
           {/* To Input */}
           <div className="space-y-2">
             <label
               htmlFor="to"
               className="block text-xs sm:text-sm font-medium text-gray-700"
             >
->>>>>>> 9bdda7032d991f1afd7a5a66774069c13d22f220
               To
             </label>
             <div className="relative">
@@ -209,12 +196,8 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Time Preference (Optional)
           </label>
-<<<<<<< HEAD
-          <div className="flex gap-4">
-=======
           
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
->>>>>>> 9bdda7032d991f1afd7a5a66774069c13d22f220
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
@@ -253,16 +236,12 @@ function RouteForm({ onSubmit, isLoading = false }) {
                   : setArrivalTime(e.target.value)
               }
               disabled={isLoading}
-<<<<<<< HEAD
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-=======
               className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder={
                 timeMode === TIME_MODES.DEPARTURE
                   ? "Select departure time"
                   : "Select arrival time"
               }
->>>>>>> 9bdda7032d991f1afd7a5a66774069c13d22f220
             />
             <ClockIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
@@ -279,13 +258,8 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Additional Options
           </label>
-<<<<<<< HEAD
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-=======
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
->>>>>>> 9bdda7032d991f1afd7a5a66774069c13d22f220
             {/* Delivery Date */}
             <div className="space-y-2">
               <label htmlFor="deliveryDate" className="block text-xs font-medium text-gray-600">
