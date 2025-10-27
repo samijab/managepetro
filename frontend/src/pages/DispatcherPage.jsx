@@ -1,13 +1,28 @@
 import { useState, useMemo } from "react";
-import { useTrucks, useStations, useOptimizeDispatch } from "../hooks/useApiQueries";
+import {
+  useTrucks,
+  useStations,
+  useOptimizeDispatch,
+} from "../hooks/useApiQueries";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import TruckDispatchCard from "../components/TruckDispatchCard";
 import StationNeedsCard from "../components/StationNeedsCard";
 import DispatchResultCard from "../components/DispatchResultCard";
-import { TruckIcon, MapPinIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import {
+  TruckIcon,
+  MapPinIcon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
 import Api from "../services/api";
-import { DEFAULT_DEPOT_LOCATION, DEFAULT_LLM_MODEL, LLM_MODELS, FUEL_THRESHOLDS, TRUCK_STATUS, REQUEST_METHODS } from "../constants/config";
+import {
+  DEFAULT_DEPOT_LOCATION,
+  DEFAULT_LLM_MODEL,
+  LLM_MODELS,
+  FUEL_THRESHOLDS,
+  TRUCK_STATUS,
+  REQUEST_METHODS,
+} from "../constants/config";
 
 function DispatcherPage() {
   const [selectedTruck, setSelectedTruck] = useState(null);
@@ -17,8 +32,16 @@ function DispatcherPage() {
   const [llmModel, setLlmModel] = useState(DEFAULT_LLM_MODEL);
 
   // Fetch data using React Query
-  const { data: trucksData, isLoading: trucksLoading, error: trucksError } = useTrucks();
-  const { data: stationsData, isLoading: stationsLoading, error: stationsError } = useStations();
+  const {
+    data: trucksData,
+    isPending: trucksLoading,
+    error: trucksError,
+  } = useTrucks();
+  const {
+    data: stationsData,
+    isPending: stationsLoading,
+    error: stationsError,
+  } = useStations();
   const optimizeDispatchMutation = useOptimizeDispatch();
 
   const trucks = trucksData?.trucks || [];
@@ -26,7 +49,8 @@ function DispatcherPage() {
     if (!stationsData?.stations) return [];
     // Filter stations that need refuelling based on defined threshold
     return stationsData.stations.filter(
-      (station) => station.needs_refuel || station.fuel_level < FUEL_THRESHOLDS.HIGH
+      (station) =>
+        station.needs_refuel || station.fuel_level < FUEL_THRESHOLDS.HIGH
     );
   }, [stationsData]);
 
@@ -35,7 +59,7 @@ function DispatcherPage() {
 
   const handleOptimizeDispatch = async (truck) => {
     setSelectedTruck(truck);
-    
+
     optimizeDispatchMutation.mutate(
       {
         truck_id: truck.truck_id,
@@ -57,31 +81,31 @@ function DispatcherPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         <LoadingSpinner message="Loading dispatcher data..." />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <TruckIcon className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">
+              <TruckIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Dispatcher Dashboard
               </h1>
             </div>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Optimize truck dispatches to stations requiring fuel delivery
             </p>
           </div>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors self-start sm:self-auto"
           >
             <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Settings</span>
@@ -91,7 +115,9 @@ function DispatcherPage() {
         {/* Settings Panel */}
         {showSettings && (
           <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Dispatch Settings</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
+              Dispatch Settings
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
@@ -144,31 +170,40 @@ function DispatcherPage() {
       )}
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Available Trucks</div>
-          <div className="mt-1 text-3xl font-semibold text-gray-900">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 sm:mb-8">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
+            Available Trucks
+          </div>
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-gray-900">
             {trucks.filter((t) => t.status === TRUCK_STATUS.ACTIVE).length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Stations Needing Fuel</div>
-          <div className="mt-1 text-3xl font-semibold text-orange-600">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
+            Stations Needing Fuel
+          </div>
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-orange-600">
             {stations.length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">IoT Auto-Requests</div>
-          <div className="mt-1 text-3xl font-semibold text-blue-600">
-            {stations.filter((s) => s.request_method === REQUEST_METHODS.IOT).length}
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-gray-500">
+            IoT Auto-Requests
+          </div>
+          <div className="mt-1 text-2xl sm:text-3xl font-semibold text-blue-600">
+            {
+              stations.filter((s) => s.request_method === REQUEST_METHODS.IOT)
+                .length
+            }
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Left Column: Trucks */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
             Available Trucks ({trucks.length})
           </h2>
           <div className="space-y-4">
@@ -177,7 +212,10 @@ function DispatcherPage() {
                 key={truck.truck_id}
                 truck={truck}
                 onOptimize={handleOptimizeDispatch}
-                isOptimizing={optimizeDispatchMutation.isPending && selectedTruck?.truck_id === truck.truck_id}
+                isOptimizing={
+                  optimizeDispatchMutation.isPending &&
+                  selectedTruck?.truck_id === truck.truck_id
+                }
                 disabled={optimizeDispatchMutation.isPending}
               />
             ))}
@@ -196,12 +234,15 @@ function DispatcherPage() {
             />
           ) : (
             <>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
                 Stations Requiring Fuel ({stations.length})
               </h2>
               <div className="space-y-4">
                 {stations.map((station) => (
-                  <StationNeedsCard key={station.station_id} station={station} />
+                  <StationNeedsCard
+                    key={station.station_id}
+                    station={station}
+                  />
                 ))}
               </div>
             </>

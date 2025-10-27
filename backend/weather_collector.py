@@ -1,59 +1,94 @@
-import os
-import time
 import requests
-import mysql.connector
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from models.data_models import WeatherData
-
-API_KEY = "d001fb8e247c4e4ab1b40950251010"
-CITY = "Vancouver"
-
-# Database config
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "manage_petro")
-DB_USER = os.getenv("DB_USER", "mp_app")
-DB_PASS = os.getenv("DB_PASS", "devpass")
+from models.database_models import WeatherData as WeatherRecord
+from config import config
 
 
-def fetch_weather() -> WeatherData:
-    """Fetch weather data using standardized model"""
-    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={CITY}"
-    r = requests.get(url)
-    r.raise_for_status()
-    data = r.json()
-    return WeatherData.from_api_response(data)
+async def fetch_weather() -> WeatherData:
+    """Fetch weather data using standardized model.
+
+    Runs the blocking requests.get call in a thread so the async event loop
+    is not blocked.
+    """
+    url = f"https://api.weatherapi.com/v1/current.json?key={config.WEATHER_API_KEY}&q={config.WEATHER_CITY}"
+
+    def _sync_get():
+        r = requests.get(url, timeout=30)
+        r.raise_for_status()
+        return r.json()
+
+    try:
+        data = await asyncio.to_thread(_sync_get)
+        return WeatherData.from_api_response(data)
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Weather API request failed: {str(e)}")
+    except ValueError as e:
+        raise Exception(f"Weather API response parsing failed: {str(e)}")
 
 
-def save_to_db(weather: WeatherData):
-    """Save weather data to database using standardized structure"""
-    conn = mysql.connector.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME
+async def save_to_db(weather: WeatherData, session: AsyncSession):
+    """Save weather data to database using SQLAlchemy 2.0"""
+    try:
+        db_data = weather.to_db_dict()
+        weather_record = WeatherRecord(
+            city=db_data["city"],
+            temperature=db_data["temperature"],
+            condition=db_data["condition"],
+            wind=db_data["wind"],
+            humidity=db_data["humidity"],
+            collected_at=db_data["collected_at"],
+        )
+
+        session.add(weather_record)
+        await session.commit()
+        print(f"Weather data saved: {weather.to_dict()}")
+
+    except Exception as e:
+        print(f"Failed to save weather data: {e}")
+        await session.rollback()
+        raise
+
+
+def create_async_db_session():
+    """Create async session factory for weather collector.
+
+    Returns an async_sessionmaker bound to an async engine. This function is
+    synchronous (it does not perform IO).
+    """
+    db_config = config.get_db_config()
+    database_url = f"mysql+aiomysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}"
+
+    engine = create_async_engine(
+        database_url,
+        echo=False,  # Set to True for SQL debugging
+        pool_pre_ping=True,
     )
-    cur = conn.cursor()
 
-    db_data = weather.to_db_dict()
-    cur.execute(
-        """
-        INSERT INTO weather_data (city, temperature, condition, wind, humidity, collected_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """,
-        (
-            db_data["city"],
-            db_data["temperature"],
-            db_data["condition"],
-            db_data["wind"],
-            db_data["humidity"],
-            db_data["collected_at"],
-        ),
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
     )
+    return async_session
 
-    conn.commit()
-    cur.close()
-    conn.close()
+
+async def main():
+    """Main weather collection loop using async SQLAlchemy"""
+    async_session = create_async_db_session()
+
+    while True:
+        try:
+            async with async_session() as session:
+                weather = await fetch_weather()
+                await save_to_db(weather, session)
+                print("Weather data inserted:", weather.to_dict())
+
+            await asyncio.sleep(3600)  # Wait 1 hour
+
+        except Exception as e:
+            print(f"Weather collection error: {e}")
+            await asyncio.sleep(300)  # Wait 5 minutes on error
 
 
 if __name__ == "__main__":
-    while True:
-        weather = fetch_weather()
-        save_to_db(weather)
-        print("Weather data inserted:", weather.to_dict())
-        time.sleep(3600)
+    asyncio.run(main())

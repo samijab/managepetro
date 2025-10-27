@@ -9,33 +9,33 @@ function FuelStationsCard({ fuelStations }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
           Nearby Fuel Stations
         </h3>
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <span className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {validStations.length} stations
         </span>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+      <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto">
         {validStations.map((station, index) => (
           <div
             key={station.station_id || index}
-            className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+            className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
           >
             <div className="flex-shrink-0 mt-1">
-              <MapPinIcon className="w-5 h-5 text-blue-500" />
+              <MapPinIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                     {station.name || "Unnamed Station"}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">
                     {station.city && station.region
                       ? `${station.city}, ${station.region}`
                       : station.city || station.region}

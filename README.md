@@ -1,139 +1,306 @@
-# Manage Petro – ISSP Project
+# Manage Petro Setup Guide
 
-Monorepo with a React (Vite) frontend and a Python FastAPI backend.
+AI-powered fuel delivery management system with React frontend and Python backend.
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- Python 3.10+ and pip
-- Git
+**⚠️ Install these first before continuing:**
+
+1. **Git** - Download from https://git-scm.com/downloads and install
+2. **Node.js 18+** - Download from https://nodejs.org and install (this includes npm)
+3. **Python 3.10+** - Download from https://python.org/downloads
+   - ⚠️ **IMPORTANT on Windows**: Check "Add Python to PATH" during installation
+4. **Docker Desktop** - Download from https://www.docker.com/products/docker-desktop
+   - After installing, restart your computer if prompted
+   - Open Docker Desktop and wait for it to fully start (you'll see a whale icon)
+
+**How to test if installed correctly:**
+
+- Open a terminal/command prompt and type: `git --version`, `node --version`, `python --version`
+- All should show version numbers (not error messages)
+
+## Step-by-Step Setup
+
+### Step 1: Download the Project
+
+**📍 Where to run:** Any folder on your computer
+
+1. **Open a terminal/command prompt:**
+
+   - Windows: Right-click in a folder → "Open in Terminal" or "Open PowerShell here"
+   - Mac: Right-click in Finder → "New Terminal at Folder"
+   - Linux: Right-click → "Open in Terminal"
+
+2. **Download the project:**
+   ```bash
+   git clone <repository-url>
+   cd "ISSP Project"
+   ```
+
+### Step 2: Start the Database
+
+**📍 Where to run:** Navigate to the backend folder first
+
+1. **Navigate to backend folder:**
+   ```bash
+   cd backend
+   ```
+2. **Make sure Docker Desktop is running** (check for whale icon in system tray)
+
+3. **Start the database:**
+   ```bash
+   docker compose up -d
+   ```
+   **What this does:** Downloads and starts a MySQL database with sample data
+   **First time:** Takes 3-5 minutes to download
+   **Success:** You should see "Container manage-petro-mysql Started"
+
+### Step 3: Get Your API Keys (Free!)
+
+**📍 Where to run:** Make sure you're in the backend folder (run `cd backend` if needed)
+
+1. **Copy the template file:**
+
+   ```bash
+   # Windows users:
+   copy .env.example .env
+
+   # Mac/Linux users:
+   cp .env.example .env
+   ```
+
+2. **Get your free API keys:**
+
+3. **Edit the .env file:**
+   - Open the `.env` file in any text editor (Notepad, VS Code, etc.)
+   - Replace `your_key_here` with your actual API keys:
+   ```env
+   WEATHER_API_KEY=paste_weather_key_here
+   TOMTOM_API_KEY=paste_tomtom_key_here
+   GEMINI_API_KEY=paste_gemini_key_here
+   ```
+   - Save the file
+
+### Step 4: Setup Backend (Python)
+
+**📍 Where to run:** Make sure you're in the backend folder (run `cd backend` if needed)
+
+```bash
+pip install -r requirements.txt
+```
+
+**What this does:** Downloads all Python packages the app needs
+**Success:** You should see "Successfully installed..." messages
+
+### Step 5: Setup Frontend (React)
+
+**📍 Where to run:** Navigate to the frontend folder
+
+1. **Go back to project root, then to frontend:**
+
+   ```bash
+   cd ..          # Go back to "ISSP Project" folder
+   cd frontend    # Go into frontend folder
+   ```
+
+2. **Install frontend packages:**
+   ```bash
+   npm install
+   ```
+   **What this does:** Downloads all React components and tools
+   **Success:** You should see a folder called "node_modules" created
+
+## Running the Complete App
+
+**⚠️ You need 3 separate terminals/command prompts open at the same time!**
+
+### Terminal 1: Database
+
+**📍 Where to run:** Open a terminal and navigate to the backend folder
+
+```bash
+cd "ISSP Project"             # Navigate to your project folder first
+cd backend                    # Then go into backend folder
+docker compose up -d         # Starts database in background
+```
+
+**Success:** Shows "Container manage-petro-mysql Started"
+
+### Terminal 2: Backend Server
+
+**📍 Where to run:** Open a NEW terminal and navigate to the backend folder
+
+```bash
+cd "ISSP Project"             # Navigate to your project folder first
+cd backend                    # Then go into backend folder
+fastapi dev main.py          # Starts Python server
+```
+
+**Success:** Shows "Uvicorn running on http://127.0.0.1:8000"
+**⚠️ Keep this terminal open!** Don't close it or the backend stops.
+
+### Terminal 3: Frontend App
+
+**📍 Where to run:** Open a THIRD terminal and navigate to the frontend folder
+
+```bash
+cd "ISSP Project"             # Navigate to your project folder first
+cd frontend                   # Then go into frontend folder
+npm run dev                   # Starts React app
+```
+
+**Success:** Shows "Local: http://localhost:3000/"
+**⚠️ Keep this terminal open too!** Don't close it or the frontend stops.
+
+### Open Your Browser
+
+Go to: **http://localhost:3000**
+
+You should see the Manage Petro application! 🎉
+
+## Important URLs (Bookmark These)
+
+- **Main App**: http://localhost:3000 ← This is where you work
+- **API Server**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs ← Great for testing
+
+## Troubleshooting Common Problems
+
+### "Docker compose command not found" or database won't start
+
+**📍 Navigate to backend folder first:**
+
+```bash
+cd "ISSP Project"       # Go to your project folder
+cd backend              # Then go into backend folder
+docker compose down    # Stop any running database
+docker compose up -d   # Start fresh
+```
+
+**If still broken:** Make sure Docker Desktop is running (whale icon visible)
+
+### "ModuleNotFoundError" or "pip not found"
+
+**📍 Navigate to backend folder first:**
+
+```bash
+cd "ISSP Project"                # Go to your project folder
+cd backend                       # Then go into backend folder
+pip install -r requirements.txt
+```
+
+**If pip not found:** Python wasn't installed correctly or not added to PATH
+
+### "npm not found" or frontend errors
+
+**📍 Navigate to frontend folder first:**
+
+```bash
+cd "ISSP Project"        # Go to your project folder
+cd frontend              # Then go into frontend folder
+npm install
+```
+
+**If npm not found:** Node.js wasn't installed correctly
+
+### "Port already in use" errors
+
+**Problem:** Another app is using the same port
+**Solution:**
+
+- Close other development servers, React apps, or Python servers
+- Or restart your computer to clear all ports
+
+### API key errors or "Unauthorized"
+
+**Problem:** Your `.env` file has wrong or missing API keys
+**📍 Check:** Open `backend/.env` file and verify:
+
+- All three API keys are filled in (no "your_key_here" left)
+- No extra spaces or quotes around the keys
+- File is saved
+
+### Nothing works / "I'm completely lost"
+
+**📍 Nuclear option - navigate to backend folder and start completely over:**
+
+```bash
+cd "ISSP Project"              # Go to your project folder
+cd backend                     # Then go into backend folder
+docker compose down -v        # Delete everything
+docker compose up -d          # Start fresh with new data
+pip install -r requirements.txt
+```
+
+Then try the frontend setup again.
 
 ## Project Structure
 
 ```
 ISSP Project/
-├─ backend/                 # FastAPI app (main.py, requirements.txt)
-└─ frontend/                # Vite + React app
-   ├─ public/
-   ├─ src/
-   ├─ package.json
-   ├─ vite.config.js
-   └─ index.html
+├── backend/           # Python FastAPI + MySQL
+│   ├── main.py       # API server
+│   ├── .env          # Your API keys (create this)
+│   └── services/     # AI & business logic
+└── frontend/         # React app
+    ├── src/          # Components & pages
+    └── package.json  # Dependencies
 ```
 
-## Git Workflow
+## Daily Development Workflow (For Making Changes)
 
-### Initial Clone
+**📍 Navigate to your main "ISSP Project" folder first, then run these commands**
+
+### Before You Start Working Each Day:
 
 ```bash
-git clone <repository-url>
-cd "ISSP Project"
+cd "ISSP Project"              # Navigate to your project folder
+git checkout devmain           # Switch to main branch
+git pull origin devmain        # Get latest changes from team
 ```
 
-### Working with devmain Branch
-
-The **devmain** branch is our default development branch.
+### When Starting a New Feature:
 
 ```bash
-# Switch to devmain (if not already there)
-git checkout devmain
-
-# Pull latest changes before starting work
-git pull origin devmain
-
-# Create a feature branch for your work
-git checkout -b feature/your-feature-name
-
-# Make your changes, then commit
-git add .
-git commit -m "Add your descriptive commit message"
-
-# Push your feature branch
-git push origin feature/your-feature-name
-
-# Create a Pull Request to merge into devmain
+git checkout -b feature/describe-your-feature    # Create your branch
+# Example: git checkout -b feature/fix-login-button
 ```
 
-### Daily Workflow
+### When You're Done Making Changes:
 
 ```bash
-# Start of day - sync with latest devmain
-git checkout devmain
-git pull origin devmain
-
-# Create/switch to your feature branch
-git checkout -b feature/new-feature
-# or: git checkout feature/existing-feature
-
-# After making changes
-git add .
-git commit -m "Descriptive commit message"
-git push origin feature/your-feature-name
+git add .                                        # Add all your changes
+git commit -m "feat: describe what you did"     # Save with message
+git push origin feature/your-branch-name        # Send to GitHub
 ```
 
-### Branch Strategy
+Then create a Pull Request on GitHub to merge into `devmain`
 
-- **devmain** - Main development branch (default)
-- **feature/\*** - Feature branches for new development
-- **fix/\*** - Hotfix branches for bug fixes
-- **main** - Production branch (stable releases only)
+### Branch Names We Use:
 
-## One-time Setup
+- `devmain` - Main development branch (never commit directly here!)
+- `feature/something` - New features you're building
+- `fix/something` - Bug fixes
+- `main` - Production releases (don't touch this)
 
-### Backend (FastAPI)
+## ⚠️ Important Daily Reminders
 
-```powershell
-cd "backend"           # macOS/Linux: source venv/bin/activate
-pip install -r requirements.txt      # requirements.txt contains: fastapi[standard]
-```
+### Every Day Before You Start:
 
-### Frontend (Vite + React)
+1. **Check Docker Desktop is running** (whale icon visible)
+2. **Open your 3 terminals** for database, backend, frontend
+3. **Pull latest changes** with `git pull origin devmain`
+4. **Start all services** in the right folders
 
-```powershell
-cd "frontend"
-npm install
-```
+### While Developing:
 
-## Run in Development
+- **Don't close your terminals** - the app stops working
+- **Save your work often** - commit every hour or so
+- **Test your changes** at http://localhost:3000 before committing
 
-Open two terminals.
+### Getting Help:
 
-1. Backend (FastAPI)
-
-```powershell
-cd "backend"
-fastapi dev main.py
-# API: http://localhost:8000  |  Docs: http://localhost:8000/docs
-```
-
-2. Frontend (Vite)
-
-```powershell
-cd "frontend"
-npm run dev
-# App: http://localhost:3000
-```
-
-## Contributing
-
-1. **Always work on feature branches** - Never commit directly to devmain
-2. **Pull latest devmain** before creating new features
-3. **Create descriptive commit messages**
-4. **Test your changes** before pushing
-5. **Create Pull Requests** for code review before merging
-
-### Commit Message Format
-
-```
-type: brief description
-
-- More detailed explanation if needed
-- Use bullet points for multiple changes
-```
-
-Examples:
-
-- `feat: add route optimization form validation`
-- `fix: resolve mobile navigation menu overlay issue`
-- `refactor: simplify header component logo styling`
-- `docs: update API documentation for route endpoints`
+- **Error messages?** Copy the full error and ask someone
+- **Can't find a command?** Make sure you're in the right folder
+- **App not loading?** Check all 3 terminals are still running
+- **Completely stuck?** Ask a team member for help

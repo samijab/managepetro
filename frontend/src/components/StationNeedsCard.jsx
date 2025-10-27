@@ -29,16 +29,16 @@ function StationNeedsCard({ station }) {
 
   return (
     <div className="bg-white rounded-lg shadow border border-gray-200 hover:border-orange-300 transition-colors">
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-start space-x-3">
-            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
-              <MapPinIcon className="w-5 h-5 text-orange-600" />
+          <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
+            <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg flex-shrink-0">
+              <MapPinIcon className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{station.name}</h3>
-              <p className="text-sm text-gray-500">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{station.name}</h3>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">
                 {station.city}, {station.region}
               </p>
             </div>
@@ -48,7 +48,7 @@ function StationNeedsCard({ station }) {
 
         {/* Fuel Level */}
         <div className="mb-3">
-          <div className="flex justify-between text-sm mb-1">
+          <div className="flex justify-between text-xs sm:text-sm mb-1">
             <span className="text-gray-600">Fuel Level</span>
             <span className={`font-semibold ${fuelLevelColor(fuelPercent).split(" ")[0]}`}>
               {fuelPercent}%
@@ -69,7 +69,7 @@ function StationNeedsCard({ station }) {
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
           <div>
             <span className="text-gray-500">Fuel Type:</span>
             <span className="ml-1 font-medium text-gray-900">

@@ -9,21 +9,21 @@ function WeatherImpactCard({ weatherImpact }) {
     weatherImpact;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Weather Impact</h3>
-        <CloudIcon className="w-6 h-6 text-blue-500" />
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Weather Impact</h3>
+        <CloudIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* From Location Weather */}
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+        <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-100">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700 mb-2">
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Start: {fromLocation.city || "N/A"}
               </p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-600">Temp:</span>
                   <span className="ml-1 font-medium text-gray-900">
@@ -47,13 +47,13 @@ function WeatherImpactCard({ weatherImpact }) {
         </div>
 
         {/* To Location Weather */}
-        <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+        <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-100">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700 mb-2">
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Destination: {toLocation.city || "N/A"}
               </p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-600">Temp:</span>
                   <span className="ml-1 font-medium text-gray-900">
@@ -79,11 +79,11 @@ function WeatherImpactCard({ weatherImpact }) {
         {/* Driving Conditions */}
         <div className="pt-3 border-t border-gray-200">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
               Driving Conditions:
             </span>
             <span
-              className={`text-sm font-semibold ${
+              className={`text-xs sm:text-sm font-semibold ${
                 drivingConditions === "Normal"
                   ? "text-green-600"
                   : drivingConditions === "Cautious"
@@ -94,7 +94,7 @@ function WeatherImpactCard({ weatherImpact }) {
               {drivingConditions}
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-2">{routeImpact}</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-2">{routeImpact}</p>
         </div>
       </div>
     </div>
