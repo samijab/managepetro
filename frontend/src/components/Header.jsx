@@ -11,6 +11,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import managePetroLogo from "../assets/manage-petro-logo.png";
+import managePetroLogoDark from "../assets/darkManagePetroLogo.png";
 
 
 const llmOptions = [
@@ -94,11 +95,19 @@ function Header({ selectedLLM, onLLMChange }) {
               >
                 {/* Logo with consistent brand colors */}
                 <div className="w-28 h-12 sm:w-32 sm:h-14 md:w-36 md:h-14 lg:w-40 lg:h-16 drop-shadow">
-                  <img
-                    src={managePetroLogo}
-                    alt="Manage Petro"
-                    className="w-full h-full object-contain"
-                  />
+                  {darkMode ? (// Show the dark mode optimized logo when darkMode is true
+                    <img
+                      src={managePetroLogo}
+                      alt="Manage Petro Light"
+                      className="w-full h-full object-contain"
+                    />) 
+                    : (// Show the standard logo when darkMode is false (Light Mode)
+                      <img
+                        src={managePetroLogoDark}
+                        alt="Manage Petro Dark"
+                        className="w-full h-full object-contain"
+                      />)}
+
                 </div>
               </Link>
             </div>
@@ -110,8 +119,12 @@ function Header({ selectedLLM, onLLMChange }) {
                   to="/"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/"
-                      ? "text-orange-500 hover:text-orange-300"
-                      : "text-white hover:text-orange-300"
+                      ? darkMode 
+                        ? "text-orange-400 hover:text-orange-300"    
+                        : "text-orange-500 hover:text-orange-300"    
+                      : darkMode
+                        ? "text-white hover:text-orange-300"         
+                        : "text-gray-700 hover:text-gray-500"    
                   }`}
                 >
                   Route Optimization
@@ -120,8 +133,12 @@ function Header({ selectedLLM, onLLMChange }) {
                   to="/dispatcher"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/dispatcher"
-                      ? "text-orange-500 hover:text-orange-300"
-                      : "text-white hover:text-orange-300"
+                      ? darkMode 
+                        ? "text-orange-400 hover:text-orange-300"    
+                        : "text-orange-500 hover:text-orange-300"    
+                      : darkMode
+                        ? "text-white hover:text-orange-300"         
+                        : "text-gray-700 hover:text-gray-500"      
                   }`}
                 >
                   Dispatcher
@@ -130,8 +147,12 @@ function Header({ selectedLLM, onLLMChange }) {
                   to="/stations"
                   className={`text-base lg:text-lg font-medium transition-colors ${
                     location.pathname === "/stations"
-                      ? "text-orange-500 hover:text-orange-300"
-                      : "text-white hover:text-orange-300"
+                      ? darkMode 
+                        ? "text-orange-400 hover:text-orange-300"    
+                        : "text-orange-500 hover:text-orange-300"    
+                      : darkMode
+                        ? "text-white hover:text-orange-300"         
+                        : "text-gray-700 hover:text-gray-500"    
                   }`}
                 >
                   Stations
@@ -160,16 +181,20 @@ function Header({ selectedLLM, onLLMChange }) {
                   
                 {isDropdownOpen && currentPageConfig.showLLMDropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="py-1">
+                    <div className={`py-1 rounded-lg ${darkMode ?"bg-white border-gray-200" :"bg-gray-700 border-gray-600"}`}>
                       {llmOptions.map((option) => (
                         <button
                           key={option.value}
                           onClick={() => handleLLMChange(option.value)}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                             selectedLLM === option.value
-                              ? "bg-blue-50 text-orange-500 font-medium"
-                              : "text-gray-700"
-                          }`}
+                              ? darkMode 
+                                ? "text-orange-500 hover:text-orange-300 bg-blue-50"    
+                                : "text-orange-500 hover:text-orange-300"    
+                              : darkMode
+                                ? "text-gray-700 hover:bg-gray-100"         
+                                : "text-white hover:bg-gray-800"    
+                            }`}
                         >
                           {option.label}
                         </button>
@@ -178,7 +203,7 @@ function Header({ selectedLLM, onLLMChange }) {
                   </div>
                 )}
               </div>
-
+              
               {/* User Menu */}
               <div className="hidden sm:flex items-center space-x-2">
               <div className="hidden sm:block relative">
@@ -193,14 +218,15 @@ function Header({ selectedLLM, onLLMChange }) {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border z-50 ${darkMode ?"bg-white border-gray-200" :"bg-gray-700 border-gray-600"}`}>
                     <div className="py-1">
-                      <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                      <div className={`w-full text-left px-4 py-2 text-sm border-b ${darkMode ?"text-gray-500 " :"text-white"}`}>
                         {user?.email}
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        className={`w-full text-left px-4 py-2 text-sm  flex items-center space-x-2 
+                        ${darkMode ?"text-gray-500 bg-gray-50 hover:bg-gray-200" :"text-white bg-gray-700 hover:bg-gray-800"}`}
                       >
                         <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
                       {user ? (<span>Sign Out</span>) 
@@ -212,8 +238,11 @@ function Header({ selectedLLM, onLLMChange }) {
               </div>
                 <div className={`relative flex items-center w-16 h-8 rounded-full cursor-pointer p-1 transition-colors duration-300 ${darkMode ? "bg-gray-100" : "bg-gray-700"}`} onClick={toggleDarkMode}>
                   <div className={`absolute w-6 h-6 rounded-full shadow-md transition-all duration-300 ease-in-out flex items-center justify-center z-10
-                  ${darkMode ? 'transform translate-x-7 bg-gray-800' : 'bg-white'}`}>
-                    {darkMode ? (<MoonIcon className="w-4 h-4 text-white" />) : (<SunIcon className="w-4 h-4 text-yellow-600" />)}
+                  ${darkMode ? ' bg-white ' : 'transform translate-x-7 bg-gray-800'}`}>
+                    {darkMode 
+                    ? (<SunIcon className="w-4 h-4 text-yellow-600" />) 
+                    :(<MoonIcon className="w-4 h-4 text-white" />)
+                    }
                   </div>
                 </div>
             </div>
@@ -221,7 +250,8 @@ function Header({ selectedLLM, onLLMChange }) {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                className={`lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors 
+                  ${darkMode ? "bg-gray-100" : "bg-gray-700"}`}
               >
                 {isMobileMenuOpen ? (
                   <XMarkIcon className="h-6 w-6" />
