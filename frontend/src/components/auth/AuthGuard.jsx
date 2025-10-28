@@ -2,18 +2,14 @@ import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
-import LoadingSpinner from "../LoadingSpinner";
+import LoadingState from "../LoadingState";
 
 const AuthGuard = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const [showRegister, setShowRegister] = useState(false);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!isAuthenticated) {

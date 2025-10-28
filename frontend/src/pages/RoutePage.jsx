@@ -11,6 +11,7 @@ import DataSourcesCard from "../components/DataSourcesCard";
 import AIAnalysisCard from "../components/AIAnalysisCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import AIErrorMessage from "../components/AIErrorMessage";
+import PageLayout from "../components/PageLayout";
 import { useRouteData } from "../hooks/useRouteData";
 
 function RoutePage({ selectedLLM }) {
@@ -30,7 +31,7 @@ function RoutePage({ selectedLLM }) {
   };
 
   return (
-    <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 max-w-6xl">
+    <PageLayout maxWidth="6xl">
       <div className="space-y-6 sm:space-y-8">
         <RouteForm onSubmit={handleRouteSubmit} isLoading={isLoading} />
 
@@ -120,7 +121,7 @@ function RoutePage({ selectedLLM }) {
           </div>
         )}
       </div>
-    </main>
+    </PageLayout>
   );
 }
 

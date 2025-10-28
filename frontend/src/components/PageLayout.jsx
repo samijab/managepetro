@@ -3,7 +3,14 @@
  * Provides standard spacing, max-width, and responsive layout
  */
 
-function PageLayout({ children, className = "", maxWidth = "7xl", ...props }) {
+function PageLayout({
+  children,
+  className = "",
+  maxWidth = "7xl",
+  background = false,
+  fullHeight = false,
+  ...props
+}) {
   const maxWidthClasses = {
     sm: "max-w-sm",
     md: "max-w-md",
@@ -20,10 +27,24 @@ function PageLayout({ children, className = "", maxWidth = "7xl", ...props }) {
 
   const baseClasses = "mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8";
   const widthClass = maxWidthClasses[maxWidth] || maxWidthClasses["7xl"];
-  const classes = `${baseClasses} ${widthClass} ${className}`.trim();
+  const layoutClasses = `${baseClasses} ${widthClass} ${className}`.trim();
+
+  if (background || fullHeight) {
+    const wrapperClasses = fullHeight ? "min-h-screen" : "";
+    const bgClasses = background ? "bg-gray-50" : "";
+    const wrapperCombined = `${wrapperClasses} ${bgClasses}`.trim();
+
+    return (
+      <div className={wrapperCombined}>
+        <main className={layoutClasses} {...props}>
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className={classes} {...props}>
+    <div className={layoutClasses} {...props}>
       {children}
     </div>
   );

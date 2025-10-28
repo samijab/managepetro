@@ -7,6 +7,8 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { VEHICLE_TYPES, TIME_MODES } from "../constants/config";
+import FormInput from "./FormInput";
+import FormSelect from "./FormSelect";
 
 function RouteForm({ onSubmit, isLoading = false }) {
   const [from, setFrom] = useState("");
@@ -38,48 +40,30 @@ function RouteForm({ onSubmit, isLoading = false }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* From Input */}
-          <div className="space-y-2">
-            <label
-              htmlFor="from"
-              className="block text-xs sm:text-sm font-medium text-gray-700"
-            >
-              From
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="from"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                placeholder="Enter starting location"
-                disabled={isLoading}
-                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-            </div>
-          </div>
+          <FormInput
+            label="From"
+            id="from"
+            type="text"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder="Enter starting location"
+            disabled={isLoading}
+            icon={MagnifyingGlassIcon}
+            required
+          />
 
           {/* To Input */}
-          <div className="space-y-2">
-            <label
-              htmlFor="to"
-              className="block text-xs sm:text-sm font-medium text-gray-700"
-            >
-              To
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="to"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                placeholder="Enter destination"
-                disabled={isLoading}
-                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-            </div>
-          </div>
+          <FormInput
+            label="To"
+            id="to"
+            type="text"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="Enter destination"
+            disabled={isLoading}
+            icon={ArrowRightIcon}
+            required
+          />
         </div>
 
         {/* Time Mode Selection */}
@@ -87,7 +71,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Time Preference (Optional)
           </label>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -99,9 +83,11 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-xs sm:text-sm text-gray-700">Departure Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">
+                Departure Time
+              </span>
             </label>
-            
+
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
@@ -112,7 +98,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-xs sm:text-sm text-gray-700">Arrival Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">
+                Arrival Time
+              </span>
             </label>
           </div>
 
@@ -121,7 +109,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
             <input
               type="time"
               id="timeInput"
-              value={timeMode === TIME_MODES.DEPARTURE ? departureTime : arrivalTime}
+              value={
+                timeMode === TIME_MODES.DEPARTURE ? departureTime : arrivalTime
+              }
               onChange={(e) =>
                 timeMode === TIME_MODES.DEPARTURE
                   ? setDepartureTime(e.target.value)
@@ -137,7 +127,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
             />
             <ClockIcon className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
-          
+
           <p className="text-xs text-gray-500">
             {timeMode === TIME_MODES.DEPARTURE
               ? "AI will calculate when you'll arrive"
@@ -150,7 +140,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Additional Options
           </label>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Delivery Date */}
             <div className="space-y-2">
@@ -174,30 +164,15 @@ function RouteForm({ onSubmit, isLoading = false }) {
             </div>
 
             {/* Vehicle Type */}
-            <div className="space-y-2">
-              <label
-                htmlFor="vehicleType"
-                className="block text-xs font-medium text-gray-600"
-              >
-                Vehicle Type
-              </label>
-              <div className="relative">
-                <select
-                  id="vehicleType"
-                  value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  disabled={isLoading}
-                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none"
-                >
-                  {VEHICLE_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-                <TruckIcon className="absolute left-2.5 sm:left-3 top-2 sm:top-2.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-              </div>
-            </div>
+            <FormSelect
+              label="Vehicle Type"
+              id="vehicleType"
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value)}
+              options={VEHICLE_TYPES}
+              disabled={isLoading}
+              icon={TruckIcon}
+            />
           </div>
 
           {/* Notes */}

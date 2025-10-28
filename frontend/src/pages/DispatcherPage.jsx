@@ -4,12 +4,13 @@ import {
   useStations,
   useOptimizeDispatch,
 } from "../hooks/useApiQueries";
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingState from "../components/LoadingState";
 import ErrorMessage from "../components/ErrorMessage";
 import AIErrorMessage from "../components/AIErrorMessage";
 import TruckDispatchCard from "../components/TruckDispatchCard";
 import StationNeedsCard from "../components/StationNeedsCard";
 import DispatchResultCard from "../components/DispatchResultCard";
+import PageLayout from "../components/PageLayout";
 import {
   TruckIcon,
   MapPinIcon,
@@ -84,15 +85,11 @@ function DispatcherPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
-        <LoadingSpinner message="Loading dispatcher data..." />
-      </div>
-    );
+    return <LoadingState message="Loading dispatcher data..." />;
   }
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+    <PageLayout>
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -266,7 +263,7 @@ function DispatcherPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
