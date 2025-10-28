@@ -6,6 +6,7 @@ import {
 } from "../hooks/useApiQueries";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import AIErrorMessage from "../components/AIErrorMessage";
 import TruckDispatchCard from "../components/TruckDispatchCard";
 import StationNeedsCard from "../components/StationNeedsCard";
 import DispatchResultCard from "../components/DispatchResultCard";
@@ -30,6 +31,7 @@ function DispatcherPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [depotLocation, setDepotLocation] = useState(DEFAULT_DEPOT_LOCATION);
   const [llmModel, setLlmModel] = useState(DEFAULT_LLM_MODEL);
+  const [dispatchError, setDispatchError] = useState(null);
 
   // Fetch data using React Query
   const {
@@ -59,6 +61,7 @@ function DispatcherPage() {
 
   const handleOptimizeDispatch = async (truck) => {
     setSelectedTruck(truck);
+    setDispatchError(null); // Clear any previous errors
 
     optimizeDispatchMutation.mutate(
       {
@@ -72,8 +75,9 @@ function DispatcherPage() {
           const transformedResult = Api.transformDispatchResponse(result);
           setDispatchResult(transformedResult);
         },
-        onError: () => {
+        onError: (error) => {
           setDispatchResult(null);
+          setDispatchError(error?.message || "AI dispatch optimization failed");
         },
       }
     );
@@ -224,6 +228,19 @@ function DispatcherPage() {
 
         {/* Right Column: Stations or Dispatch Result */}
         <div>
+          {dispatchError && (
+            <div className="mb-4">
+              <AIErrorMessage
+                message={dispatchError}
+                context="dispatch"
+                onRetry={() =>
+                  selectedTruck && handleOptimizeDispatch(selectedTruck)
+                }
+                onDismiss={() => setDispatchError(null)}
+              />
+            </div>
+          )}
+
           {dispatchResult ? (
             <DispatchResultCard
               result={dispatchResult}

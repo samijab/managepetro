@@ -10,7 +10,7 @@ import RecentDeliveriesCard from "../components/RecentDeliveriesCard";
 import DataSourcesCard from "../components/DataSourcesCard";
 import AIAnalysisCard from "../components/AIAnalysisCard";
 import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
+import AIErrorMessage from "../components/AIErrorMessage";
 import { useRouteData } from "../hooks/useRouteData";
 
 function RoutePage({ selectedLLM }) {
@@ -39,7 +39,16 @@ function RoutePage({ selectedLLM }) {
           onViewReferences={handleViewReferences}
         />
 
-        {error && <ErrorMessage message={error} onDismiss={clearRoute} />}
+        {error && (
+          <AIErrorMessage
+            message={error}
+            context="route"
+            onRetry={() =>
+              calculateRoute(routeData.from, routeData.to, selectedLLM)
+            }
+            onDismiss={clearRoute}
+          />
+        )}
 
         {isLoading && <LoadingSpinner />}
 
