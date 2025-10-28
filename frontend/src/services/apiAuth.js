@@ -1,6 +1,7 @@
 // Enhanced API utility with authentication support
 
 import { getApiBaseUrl, API_BASE_URL } from "../config/env";
+import axios from "axios";
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem("token");
@@ -26,35 +27,23 @@ const apiRequest = async (endpoint, options = {}) => {
   const url = `${getApiBaseUrl()}${
     endpoint.startsWith("/") ? endpoint : "/" + endpoint
   }`;
-  const config = {
-    ...options,
-    headers: {
-      ...createHeaders(options.includeAuth !== false),
-      ...options.headers,
-    },
-  };
-
   try {
-    const response = await fetch(url, config);
-
-    // Handle authentication errors
-    if (response.status === 401) {
-      // Token is invalid or expired
+    const response = await axios({
+      url,
+      method: options.method || "GET",
+      data: options.body ? JSON.parse(options.body) : undefined,
+      headers: {
+        ...createHeaders(options.includeAuth !== false),
+        ...options.headers,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.reload(); // Force re-authentication
+      window.location.reload();
       throw new Error("Authentication required");
     }
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.detail || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("API request failed:", error);
     throw error;
   }
 };
@@ -68,22 +57,15 @@ export const api = {
       formData.append("username", username);
       formData.append("password", password);
 
-      return fetch(`${API_BASE_URL}/auth/token`, {
-        method: "POST",
-        body: formData,
-      });
+      return axios.post(`${API_BASE_URL}/auth/token`, formData);
     },
 
     register: (userData) =>
-      fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      }),
+      axios.post(`${API_BASE_URL}/auth/register`, userData),
 
-    me: () => fetch(`${API_BASE_URL}/auth/me`),
+    me: () => axios.get(`${API_BASE_URL}/auth/me`),
 
-    logout: () => fetch(`${API_BASE_URL}/auth/logout`, { method: "POST" }),
+    logout: () => axios.post(`${API_BASE_URL}/auth/logout`),
   },
 
   // Route optimization (protected)

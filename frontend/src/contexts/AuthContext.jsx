@@ -17,30 +17,21 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await fetch(`${API_BASE_URL}/auth/me`, {
+          const response = await axios.get(`${API_BASE_URL}/auth/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           });
-
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-          } else {
-            // Token is invalid, remove it
-            localStorage.removeItem("token");
-            setToken(null);
-          }
-        } catch (error) {
-          console.error("Auth check failed:", error);
+          setUser(response.data);
+        } catch {
+          // Token is invalid or request failed
           localStorage.removeItem("token");
           setToken(null);
         }
       }
       setLoading(false);
     };
-
     checkAuth();
   }, [token]);
 
@@ -50,33 +41,29 @@ export const AuthProvider = ({ children }) => {
       formData.append("username", username);
       formData.append("password", password);
 
-      const response = await fetch(`${API_BASE_URL}/auth/token`, {
-        method: "POST",
-        body: formData,
+      const response = await axios.post(`${API_BASE_URL}/auth/token`, formData);
+      const { access_token } = response.data;
+
+      localStorage.setItem("token", access_token);
+      setToken(access_token);
+
+      // Fetch user info
+      const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
       });
+      setUser(userResponse.data);
 
-      if (response.ok) {
-        const data = await response.json();
-        const { access_token } = data;
-
-        localStorage.setItem("token", access_token);
-        setToken(access_token);
-
-        // Fetch user info
-        const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        setUser(userResponse.data);
-
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.detail || "Login failed" };
+      return { success: true };
+    } catch (error) {
+      if (error.response && error.response.data) {
+        return {
+          success: false,
+          error: error.response.data.detail || "Login failed",
+        };
       }
-    } catch {
       return { success: false, error: "Network error. Please try again." };
     }
   };
