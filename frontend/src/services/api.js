@@ -6,7 +6,7 @@
  */
 
 import axios from "axios";
-import { getApiBaseUrl } from "../config/env";
+import { getApiBaseUrl, API_BASE_URL } from "../config/env";
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
@@ -368,6 +368,86 @@ const Api = {
       ...otherFields,
     };
   },
+
+  /**
+   * Login user
+   * @param {string} username
+   * @param {string} password
+   * @returns {Promise<{access_token: string}>}
+   */
+  login: async (username, password) => {
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+    const response = await axios.post(`${API_BASE_URL}/auth/token`, formData);
+    return response.data;
+  },
+
+  /**
+   * Register user
+   * @param {Object} userData
+   * @param {string} userData.username
+   * @param {string} userData.email
+   * @param {string} userData.password
+   * @returns {Promise<any>}
+   */
+  register: (userData) =>
+    axios.post(`${API_BASE_URL}/auth/register`, userData).then((r) => r.data),
+
+  /**
+   * Get current user info
+   * @returns {Promise<any>}
+   */
+  me: () =>
+    axios
+      .get(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((r) => r.data),
+
+  /**
+   * Logout user
+   * @returns {Promise<any>}
+   */
+  logout: () =>
+    axios
+      .post(
+        `${API_BASE_URL}/auth/logout`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      )
+      .then((r) => r.data),
+
+  /**
+   * Optimize route using TomTom
+   * @param {Object} routeData
+   * @returns {Promise<any>}
+   */
+  tomtom: (routeData) => Api.post("/routes/tomtom", routeData),
+
+  /**
+   * Calculate reachable range
+   * @param {Object} rangeData
+   * @returns {Promise<any>}
+   */
+  reachableRange: (rangeData) => Api.post("/routes/reachable-range", rangeData),
+
+  /**
+   * Optimize dispatch
+   * @param {Object} dispatchData
+   * @returns {Promise<any>}
+   */
+  optimizeDispatch: (dispatchData) =>
+    Api.post("/dispatch/optimize", dispatchData),
+
+  /**
+   * Get weather data
+   * @param {Object} weatherData
+   * @returns {Promise<any>}
+   */
+  weather: (weatherData) => Api.post("/weather", weatherData),
 };
 
 export default Api;

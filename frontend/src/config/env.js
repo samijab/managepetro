@@ -1,6 +1,8 @@
 // Centralized frontend environment config for Vite
 // Throws a clear error if any required env variable is missing
 
+import { REQUIRED_ENV_VARS } from "./env-config.js";
+
 export function requireEnv(varName, example = "") {
   const value = import.meta.env[varName];
   if (!value || value === "") {
@@ -13,14 +15,22 @@ export function requireEnv(varName, example = "") {
   return value;
 }
 
+// Create exports for all required environment variables
 export const API_BASE_URL = requireEnv(
   "VITE_API_BASE_URL",
-  "https://your-backend-url"
+  REQUIRED_ENV_VARS.find((v) => v.name === "VITE_API_BASE_URL")?.example
 );
 export const DEFAULT_LLM_MODEL = requireEnv(
   "VITE_DEFAULT_LLM_MODEL",
-  "gemini-2.5-flash"
+  REQUIRED_ENV_VARS.find((v) => v.name === "VITE_DEFAULT_LLM_MODEL")?.example
 );
+
+// Fail fast on all required envs (call this in main.jsx)
+export function checkRequiredEnvs() {
+  REQUIRED_ENV_VARS.forEach(({ name, example }) => {
+    requireEnv(name, example);
+  });
+}
 
 // Always append /api to the base URL, regardless of what it is
 export function getApiBaseUrl() {

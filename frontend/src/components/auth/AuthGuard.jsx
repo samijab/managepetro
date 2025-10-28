@@ -5,7 +5,7 @@ import RegisterForm from "./RegisterForm";
 import LoadingSpinner from "../LoadingSpinner";
 
 const AuthGuard = ({ children }) => {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [showRegister, setShowRegister] = useState(false);
 
   if (loading) {
@@ -49,11 +49,7 @@ const AuthGuard = ({ children }) => {
     );
   }
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 const LogoutButton = () => {

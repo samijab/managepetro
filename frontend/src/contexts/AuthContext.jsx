@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import { API_BASE_URL } from "../config/env";
-import axios from "axios";
+import Api from "../services/api";
 
 // Create the context with proper default value
 const AuthContext = createContext(undefined);
@@ -17,13 +16,8 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get(`${API_BASE_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-          setUser(response.data);
+          const userData = await Api.me();
+          setUser(userData);
         } catch {
           // Token is invalid or request failed
           localStorage.removeItem("token");
@@ -37,24 +31,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
-
-      const response = await axios.post(`${API_BASE_URL}/auth/token`, formData);
-      const { access_token } = response.data;
+      const response = await Api.login(username, password);
+      const { access_token } = response;
 
       localStorage.setItem("token", access_token);
       setToken(access_token);
 
       // Fetch user info
-      const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      setUser(userResponse.data);
+      const userData = await Api.me();
+      setUser(userData);
 
       return { success: true };
     } catch (error) {
@@ -70,11 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      await axios.post(`${API_BASE_URL}/auth/register`, {
-        username,
-        email,
-        password,
-      });
+      await Api.register({ username, email, password });
       // Auto-login after successful registration
       const loginResult = await login(username, password);
       return loginResult;
