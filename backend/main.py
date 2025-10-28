@@ -579,3 +579,39 @@ async def optimize_dispatch(
         raise HTTPException(
             status_code=500, detail=f"Dispatch optimization failed: {str(e)}"
         )
+
+
+# Debug endpoint: List available Gemini models and supported methods
+
+# Use official Google Generative AI client for model listing
+import google.generativeai as genai
+
+@app.get("/api/debug/gemini-models")
+async def list_gemini_models():
+    """List available Gemini models and their supported methods for the configured API key."""
+    try:
+        genai.configure(api_key=config.GEMINI_API_KEY)
+        try:
+            models = genai.list_models()
+        except TypeError as te:
+            # Catch Model.__init__() got an unexpected keyword argument 'thinking'
+            return {
+                "error": str(te),
+                "hint": "This is a bug in the google-generativeai client. Try updating the package with 'pip install --upgrade google-generativeai'. If the error persists, wait for Google to fix their API response or use a different model listing method."
+            }
+        formatted = []
+        for m in models:
+            if hasattr(m, "__dict__"):
+                m_dict = m.__dict__
+            else:
+                m_dict = {}
+            print("DEBUG Gemini model fields:", m_dict.keys() if m_dict else str(m))
+            formatted.append({
+                "name": m_dict.get("name", str(m)),
+                "description": m_dict.get("description", ""),
+                "supported_methods": m_dict.get("supported_generation_methods", []),
+                "raw_fields": {k: v for k, v in m_dict.items() if k not in ["name", "description", "supported_generation_methods"]} if m_dict else str(m),
+            })
+        return {"models": formatted}
+    except Exception as e:
+        return {"error": str(e)}

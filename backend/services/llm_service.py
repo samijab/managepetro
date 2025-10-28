@@ -23,6 +23,7 @@ from utils.serializers import station_available_dict, truck_simple_dict
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from .lc_router import get_chat_model
+import os 
 
 
 class LLMService:
@@ -93,17 +94,18 @@ class LLMService:
         return result
 
     async def optimize_route(
-        self,
-        from_location: str,
-        to_location: str,
-        session: AsyncSession,
-        llm_model: str = "gemini-2.5-flash",
-        departure_time: Optional[str] = None,
-        arrival_time: Optional[str] = None,
-        time_mode: str = "departure",
-        delivery_date: Optional[str] = None,
-        vehicle_type: str = "fuel_delivery_truck",
-        notes: Optional[str] = None,
+    self,
+    from_location: str,
+    to_location: str,
+    session: AsyncSession,
+    # Default model is Gemini 2.5 Flash; override by passing llm_model in API request (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet')
+    llm_model: str = os.getenv("DEFAULT_LLM_MODEL", "models/gemini-2.5-flash"),
+    departure_time: Optional[str] = None,
+    arrival_time: Optional[str] = None,
+    time_mode: str = "departure",
+    delivery_date: Optional[str] = None,
+    vehicle_type: str = "fuel_delivery_truck",
+    notes: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate route optimization using standardized data models with SQLAlchemy 2.0"""
 
@@ -147,11 +149,12 @@ class LLMService:
         )
 
     async def optimize_dispatch(
-        self,
-        truck_id: str,
-        depot_location: str,
-        session: AsyncSession,
-        llm_model: str = "gemini-2.5-flash",
+    self,
+    truck_id: str,
+    depot_location: str,
+    session: AsyncSession,
+    # Default model is Gemini 2.5 Flash; override by passing llm_model in API request (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet')
+    llm_model: str = os.getenv("DEFAULT_LLM_MODEL", "models/gemini-2.5-flash"),
     ) -> Dict[str, Any]:
         """Optimize dispatch route for a truck to deliver fuel to stations in need using SQLAlchemy 2.0"""
         try:
@@ -645,17 +648,17 @@ class LLMService:
                 "quota" in error_msg.lower()
                 or "resource_exhausted" in error_msg.lower()
             ):
-                self._logger.exception("Gemini API quota exceeded: %s", e)
+                self._logger.exception("API quota exceeded: %s", e)
                 raise Exception(
-                    "Gemini API quota exceeded. Please check your API limits or wait before retrying."
+                    "API quota exceeded. Please check your API limits or wait before retrying."
                 )
             elif "not_found" in error_msg.lower():
-                self._logger.exception("Gemini model not found: %s", e)
+                self._logger.exception("model not found: %s", e)
                 raise Exception(
                     f"Model '{model}' not found. Please check if the model name is correct."
                 )
             else:
-                self._logger.exception("Gemini API call failed: %s", e)
+                self._logger.exception("API call failed: %s", e)
                 raise
     async def _call_llm(self, prompt: str, model_id: str) -> str:
         """

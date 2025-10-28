@@ -22,15 +22,12 @@ from config import config
 def resolve_model(model_id: str) -> tuple[str, str]:
     """
     Splits a model string into (provider, model_name).
-
-    Examples:
-        "openai:gpt-4o-mini"   -> ("openai", "gpt-4o-mini")
-        "google:gemini-1.5-pro" -> ("google", "gemini-1.5-pro")
-        "gemini-2.5-flash"      -> ("google", "gemini-2.5-flash")
+    Accepts both ":" and "/" separators.
     """
-    if ":" in model_id:
-        provider, name = model_id.split(":", 1)
-        return provider.lower().strip(), name.strip()
+    for sep in (":", "/"):
+        if sep in model_id:
+            provider, name = model_id.split(sep, 1)
+            return provider.lower().strip(), name.strip()
 
     # Default fallback: treat un-prefixed names as Google Gemini
     return "google", model_id.strip()
@@ -61,6 +58,7 @@ def get_chat_model(model_id: str, temperature: float = 0.3) -> BaseChatModel:
             model=name,
             temperature=temperature,
             api_key=config.GEMINI_API_KEY,
+            apiVersion="v1", 
         )
 
     else:
