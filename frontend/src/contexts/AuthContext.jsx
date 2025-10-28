@@ -1,4 +1,6 @@
 import { createContext, useState, useEffect } from "react";
+import { API_BASE_URL } from "../config/env";
+import axios from "axios";
 
 // Create the context with proper default value
 const AuthContext = createContext(undefined);
@@ -8,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = "http://localhost:8000";
+  // Use centralized environment config for API base URL
 
   // Check if user is authenticated when component mounts
   useEffect(() => {
@@ -61,17 +63,13 @@ export const AuthProvider = ({ children }) => {
         setToken(access_token);
 
         // Fetch user info
-        const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+        const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
           },
         });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          setUser(userData);
-        }
+        setUser(userResponse.data);
 
         return { success: true };
       } else {
@@ -85,30 +83,14 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
+      await axios.post(`${API_BASE_URL}/auth/register`, {
+        username,
+        email,
+        password,
       });
-
-      if (response.ok) {
-        await response.json(); // userData not used but needed to clear response
-        // Auto-login after successful registration
-        const loginResult = await login(username, password);
-        return loginResult;
-      } else {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error: errorData.detail || "Registration failed",
-        };
-      }
+      // Auto-login after successful registration
+      const loginResult = await login(username, password);
+      return loginResult;
     } catch {
       return { success: false, error: "Network error. Please try again." };
     }

@@ -6,7 +6,8 @@
 /**
  * Default LLM model for route optimization
  */
-export const DEFAULT_LLM_MODEL = "gemini-2.5-flash";
+import { DEFAULT_LLM_MODEL } from "../config/env";
+export { DEFAULT_LLM_MODEL };
 
 /**
  * Available LLM models for selection

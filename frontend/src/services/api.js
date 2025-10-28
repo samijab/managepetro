@@ -6,13 +6,10 @@
  */
 
 import axios from "axios";
+import { getApiBaseUrl } from "../config/env";
 
-/**
- * Axios instance configured for the FastAPI backend.
- * @type {import('axios').AxiosInstance}
- */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
+  baseURL: getApiBaseUrl(),
   timeout: 120000, // 120 seconds to handle long-running route optimization
 });
 

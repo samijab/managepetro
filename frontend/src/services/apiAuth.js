@@ -1,6 +1,6 @@
 // Enhanced API utility with authentication support
 
-const API_BASE_URL = "http://localhost:8000";
+import { getApiBaseUrl, API_BASE_URL } from "../config/env";
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem("token");
@@ -23,7 +23,9 @@ const createHeaders = (includeAuth = true) => {
 
 // Enhanced fetch with automatic authentication
 const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${getApiBaseUrl()}${
+    endpoint.startsWith("/") ? endpoint : "/" + endpoint
+  }`;
   const config = {
     ...options,
     headers: {
@@ -73,15 +75,15 @@ export const api = {
     },
 
     register: (userData) =>
-      apiRequest("/auth/register", {
+      fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
-        includeAuth: false,
       }),
 
-    me: () => apiRequest("/auth/me"),
+    me: () => fetch(`${API_BASE_URL}/auth/me`),
 
-    logout: () => apiRequest("/auth/logout", { method: "POST" }),
+    logout: () => fetch(`${API_BASE_URL}/auth/logout`, { method: "POST" }),
   },
 
   // Route optimization (protected)
