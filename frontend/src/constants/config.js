@@ -6,15 +6,15 @@
 /**
  * Default LLM model for route optimization
  */
-// Use the backend-compatible model name
-export const DEFAULT_LLM_MODEL = "models/gemini-2.5-flash";
+import { DEFAULT_LLM_MODEL } from "../config/env";
+export { DEFAULT_LLM_MODEL };
 
 /**
  * Available LLM models for selection
  */
 // Only allow Gemini 2.5 Flash as selectable model
 export const LLM_MODELS = [
-  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" }
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 /**

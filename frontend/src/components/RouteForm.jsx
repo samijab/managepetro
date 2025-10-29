@@ -196,7 +196,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Time Preference (Optional)
           </label>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -208,7 +208,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-xs sm:text-sm text-gray-700">Departure Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">
+                Departure Time
+              </span>
             </label>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -220,7 +222,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
                 disabled={isLoading}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-xs sm:text-sm text-gray-700">Arrival Time</span>
+              <span className="text-xs sm:text-sm text-gray-700">
+                Arrival Time
+              </span>
             </label>
           </div>
 
@@ -229,7 +233,9 @@ function RouteForm({ onSubmit, isLoading = false }) {
             <input
               type="time"
               id="timeInput"
-              value={timeMode === TIME_MODES.DEPARTURE ? departureTime : arrivalTime}
+              value={
+                timeMode === TIME_MODES.DEPARTURE ? departureTime : arrivalTime
+              }
               onChange={(e) =>
                 timeMode === TIME_MODES.DEPARTURE
                   ? setDepartureTime(e.target.value)
@@ -258,11 +264,14 @@ function RouteForm({ onSubmit, isLoading = false }) {
           <label className="block text-xs sm:text-sm font-medium text-gray-700">
             Additional Options
           </label>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Delivery Date */}
             <div className="space-y-2">
-              <label htmlFor="deliveryDate" className="block text-xs font-medium text-gray-600">
+              <label
+                htmlFor="deliveryDate"
+                className="block text-xs font-medium text-gray-600"
+              >
                 Preferred Delivery Date
               </label>
               <div className="relative">
@@ -280,7 +289,10 @@ function RouteForm({ onSubmit, isLoading = false }) {
 
             {/* Vehicle Type */}
             <div className="space-y-2">
-              <label htmlFor="vehicleType" className="block text-xs font-medium text-gray-600">
+              <label
+                htmlFor="vehicleType"
+                className="block text-xs font-medium text-gray-600"
+              >
                 Vehicle Type
               </label>
               <div className="relative">
@@ -304,7 +316,10 @@ function RouteForm({ onSubmit, isLoading = false }) {
 
           {/* Notes */}
           <div className="space-y-2">
-            <label htmlFor="notes" className="block text-xs font-medium text-gray-600">
+            <label
+              htmlFor="notes"
+              className="block text-xs font-medium text-gray-600"
+            >
               Delivery Notes (Optional)
             </label>
             <textarea

@@ -1,30 +1,21 @@
-import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Navigate, useLocation } from "react-router-dom";
-import LoadingSpinner from "../LoadingSpinner";
+import LoadingState from "../LoadingState";
 
 const AuthGuard = ({ children }) => {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 const LogoutButton = () => {
