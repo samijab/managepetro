@@ -18,9 +18,10 @@ export const LLM_MODELS = [
 ];
 
 /**
- * Default depot location
+ * Default depot location for route optimization
  */
-export const DEFAULT_DEPOT_LOCATION = "Toronto";
+import { DEFAULT_DEPOT_LOCATION } from "../config/env";
+export { DEFAULT_DEPOT_LOCATION };
 
 /**
  * Vehicle types available for route optimization

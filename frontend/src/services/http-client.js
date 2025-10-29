@@ -5,14 +5,14 @@
  */
 
 import axios from "axios";
-import { getApiBaseUrl } from "../config/env";
+import { getApiBaseUrl, API_TIMEOUT } from "../config/env";
 
 /**
  * Axios instance configured for the FastAPI backend
  */
 export const api = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 120000, // 120 seconds to handle long-running route optimization
+  timeout: API_TIMEOUT, // Configurable timeout for long-running route optimization
 });
 
 /**
