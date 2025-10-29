@@ -18,6 +18,7 @@ function RoutePage({ selectedLLM }) {
     useRouteData();
 
   const handleRouteSubmit = async (from, to, timeData = {}) => {
+    console.log("Using LLM:", selectedLLM);
     await calculateRoute(from, to, selectedLLM, timeData);
   };
 

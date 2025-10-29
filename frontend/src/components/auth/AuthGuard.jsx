@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import LoginForm from "./LoginForm";
-import RegisterForm from "./RegisterForm";
+import { Navigate, useLocation } from "react-router-dom";
 import LoadingSpinner from "../LoadingSpinner";
 
 const AuthGuard = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
-  const [showRegister, setShowRegister] = useState(false);
+
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -17,36 +17,7 @@ const AuthGuard = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Manage Petro
-            </h1>
-            <p className="text-gray-600">
-              Please sign in to access the fuel management system
-            </p>
-          </div>
-
-          {showRegister ? (
-            <RegisterForm
-              onSuccess={() => {
-                // User will be automatically logged in after registration
-              }}
-              onSwitchToLogin={() => setShowRegister(false)}
-            />
-          ) : (
-            <LoginForm
-              onSuccess={() => {
-                // User will be automatically redirected after login
-              }}
-              onSwitchToRegister={() => setShowRegister(true)}
-            />
-          )}
-        </div>
-      </div>
-    );
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return (
