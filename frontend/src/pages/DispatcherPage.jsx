@@ -1,9 +1,7 @@
 import { useState, useMemo } from "react";
-import {
-  useTrucks,
-  useStations,
-  useOptimizeDispatch,
-} from "../hooks/useApiQueries";
+import { useTrucks } from "../hooks/useTruckQueries";
+import { useStations } from "../hooks/useStationQueries";
+import { useOptimizeDispatch } from "../hooks/useDispatchQueries";
 import LoadingState from "../components/LoadingState";
 import ErrorMessage from "../components/ErrorMessage";
 import AIErrorMessage from "../components/AIErrorMessage";

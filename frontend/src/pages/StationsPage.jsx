@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import DynamicTable from "../components/DynamicTable";
 import PageLayout from "../components/PageLayout";
 import LoadingState from "../components/LoadingState";
-import { useStations } from "../hooks/useApiQueries";
+import { useStations } from "../hooks/useStationQueries";
 
 function StationsPage() {
   const { data, isPending, error } = useStations();
