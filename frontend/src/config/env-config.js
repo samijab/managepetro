@@ -5,6 +5,7 @@
 export const REQUIRED_ENV_VARS = [
   { name: "VITE_API_BASE_URL", example: "https://your-backend-url" },
   { name: "VITE_DEFAULT_LLM_MODEL", example: "gemini-2.5-flash" },
+  { name: "VITE_GOOGLE_MAPS_API_KEY", example: "your-google-maps-api-key" },
   // Add new required variables here:
   // { name: "VITE_NEW_VARIABLE", example: "default-value" },
 ];

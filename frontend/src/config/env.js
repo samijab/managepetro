@@ -24,6 +24,10 @@ export const DEFAULT_LLM_MODEL = requireEnv(
   "VITE_DEFAULT_LLM_MODEL",
   REQUIRED_ENV_VARS.find((v) => v.name === "VITE_DEFAULT_LLM_MODEL")?.example
 );
+export const GOOGLE_MAPS_API_KEY = requireEnv(
+  "VITE_GOOGLE_MAPS_API_KEY",
+  REQUIRED_ENV_VARS.find((v) => v.name === "VITE_GOOGLE_MAPS_API_KEY")?.example
+);
 
 // Fail fast on all required envs (call this in main.jsx)
 export function checkRequiredEnvs() {

@@ -14,7 +14,7 @@ export { DEFAULT_LLM_MODEL };
  */
 // Only allow Gemini 2.5 Flash as selectable model
 export const LLM_MODELS = [
-  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 /**

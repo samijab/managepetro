@@ -1,5 +1,6 @@
 import { useAuth } from "../../hooks/useAuth";
 import { Navigate, useLocation } from "react-router-dom";
+import LoadingState from "../LoadingState";
 
 const AuthGuard = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();

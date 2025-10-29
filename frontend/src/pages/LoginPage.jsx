@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
@@ -7,17 +7,8 @@ import { AuthContext } from "../contexts/AuthContext";
 export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
   const navigate = useNavigate();
-  const { login, register } = useContext(AuthContext);
+  const { register } = useContext(AuthContext);
   const [error, setError] = useState(null);
-
-  const handleLogin = async ({ username, password }) => {
-    try {
-      await login(username, password);
-      navigate("/");
-    } catch (err) {
-      setError(err.message || "Login failed");
-    }
-  };
 
   const handleRegister = async ({ username, password, email }) => {
     try {
