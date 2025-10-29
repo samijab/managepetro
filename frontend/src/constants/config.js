@@ -12,10 +12,9 @@ export { DEFAULT_LLM_MODEL };
 /**
  * Available LLM models for selection
  */
+// Only allow Gemini 2.5 Flash as selectable model
 export const LLM_MODELS = [
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Fast)" },
-  { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash Exp" },
-  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro (Advanced)" },
+  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 /**

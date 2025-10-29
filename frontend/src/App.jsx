@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import AuthGuard from "./components/auth/AuthGuard";
-import LoginForm from "./components/auth/LoginForm";
+import LoginPage from "./pages/LoginPage";
 import Header from "./components/Header";
 import RoutePage from "./pages/RoutePage";
 import StationsPage from "./pages/StationsPage";
@@ -39,7 +39,7 @@ function App() {
 
               <Routes>
                 {/* Public routes */}
-                <Route path="/login" element={<LoginForm />} />
+                <Route path="/login" element={<LoginPage />} />
 
                 {/* Protected routes - require authentication */}
                 <Route

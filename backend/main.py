@@ -50,6 +50,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.get("/", include_in_schema=False)
+async def root():
+    return {"status": "ok"}
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz():
+    return {"status": "ok"}
+
+
+
 
 # Configure logging early
 configure_logging()
@@ -579,3 +589,4 @@ async def optimize_dispatch(
         raise HTTPException(
             status_code=500, detail=f"Dispatch optimization failed: {str(e)}"
         )
+
