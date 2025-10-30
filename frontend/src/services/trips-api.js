@@ -11,12 +11,19 @@ import { httpClient } from "./http-client";
  */
 
 /**
- * Get trips with optional filters
+ * Get trips with optional filtering
  * @param {{ limit?: number, successfulOnly?: boolean }} [options]
  * @returns {Promise<{ trips: Trip[], count?: number, total_available?: number }>}
  */
-export function getTrips({ limit = 50, successfulOnly = false } = {}) {
-  return httpClient.get("/trips", { limit, successful_only: successfulOnly });
+export function getTrips({ limit, successfulOnly = false } = {}) {
+  const defaultLimit = parseInt(
+    import.meta.env.VITE_TRIPS_DEFAULT_LIMIT || "50"
+  );
+  const actualLimit = limit !== undefined ? limit : defaultLimit;
+  return httpClient.get("/trips", {
+    limit: actualLimit,
+    successful_only: successfulOnly,
+  });
 }
 
 /**

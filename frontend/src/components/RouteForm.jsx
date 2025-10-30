@@ -7,6 +7,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { VEHICLE_TYPES, TIME_MODES } from "../constants/config";
+import { DEBOUNCE_DELAY } from "../config/env";
 
 function RouteForm({ onSubmit, isLoading = false }) {
   const [from, setFrom] = useState("");
@@ -38,7 +39,7 @@ function RouteForm({ onSubmit, isLoading = false }) {
 
   // Debounce helper to avoid spamming predictions
   let debounceTimer;
-  const debounced = (fn, delay = 200) => {
+  const debounced = (fn, delay = DEBOUNCE_DELAY) => {
     return (...args) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => fn(...args), delay);
