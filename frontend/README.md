@@ -192,6 +192,84 @@ frontend/
 - Use TypeScript-style JSDoc comments for functions
 - Keep components small and focused on single responsibilities
 
+### Import Organization
+
+The project uses ESLint to enforce consistent import ordering:
+
+1. **External packages** (e.g., `react`, `axios`)
+2. **Internal imports** (e.g., `../components`, `./utils`)
+
+Imports are automatically alphabetized within each group.
+
+**To organize imports:**
+
+```bash
+npm run lint
+```
+
+### Type Safety & API Synchronization
+
+The frontend uses auto-generated TypeScript types to ensure type safety with the backend API.
+
+#### Generating Types
+
+When the backend API changes (new endpoints, modified request/response structures), regenerate types:
+
+```bash
+# Ensure backend is running on http://localhost:8000
+npm run generate-types
+```
+
+This command:
+
+- Fetches the OpenAPI schema from the backend
+- Generates TypeScript interfaces for all API models
+- Creates request/response types for each endpoint
+- Outputs types to `src/types/api.ts`
+
+#### When to Regenerate Types
+
+⚠️ **Always regenerate types after:**
+
+- Adding/removing API endpoints
+- Modifying request/response models in backend (Pydantic models)
+- Changing field names, types, or required status
+- Before deploying frontend changes that depend on backend updates
+
+#### Using Generated Types
+
+Import and use types in your components:
+
+```javascript
+/**
+ * @typedef {import('../types/api').RouteRequest} RouteRequest
+ * @typedef {import('../types/api').RouteResponse} RouteResponse
+ */
+
+/**
+ * @param {RouteRequest} data
+ * @returns {Promise<RouteResponse>}
+ */
+async function calculateRoute(data) {
+  // TypeScript-aware IDEs will provide autocomplete and validation
+  return api.post("/api/routes", data);
+}
+```
+
+#### CI/CD Integration
+
+Consider adding type generation to your CI/CD pipeline:
+
+```yaml
+# Example GitHub Actions step
+- name: Generate API Types
+  run: |
+    npm run generate-types
+    git diff --exit-code src/types/api.ts || (echo "Types out of sync!" && exit 1)
+```
+
+This ensures types are always synchronized with the backend.
+
 ### API Integration
 
 - All API calls go through `src/services/api.js`

@@ -9,23 +9,18 @@ import { httpClient } from "./http-client";
 import { transformRouteResponse } from "./transformers";
 
 /**
+ * Types from auto-generated API schema
+ * @typedef {import('../types/api').RouteRequest} RouteRequest
+ */
+
+/**
  * @typedef {import('./types').RouteOptimizationResponse} RouteOptimizationResponse
  * @typedef {import('./types').TransformedRouteData} TransformedRouteData
  */
 
 /**
  * Optimize route between two locations
- * @param {Object} params
- * @param {string} params.from_location - Starting location
- * @param {string} params.to_location - Destination location
- * @param {string} [params.llm_model] - Selected LLM model (defaults to DEFAULT_LLM_MODEL from config)
- * @param {boolean} [params.use_ai_optimization=true] - Whether to use AI optimization
- * @param {string} [params.departure_time] - Departure time
- * @param {string} [params.arrival_time] - Arrival time
- * @param {string} [params.time_mode="departure"] - Time mode
- * @param {string} [params.delivery_date] - Delivery date
- * @param {string} [params.vehicle_type="fuel_delivery_truck"] - Vehicle type
- * @param {string} [params.notes] - Additional notes
+ * @param {RouteRequest} params - Route optimization request (synced with backend)
  * @returns {Promise<RouteOptimizationResponse>}
  */
 export function optimizeRoute(params) {

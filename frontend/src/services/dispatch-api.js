@@ -8,12 +8,17 @@ import { httpClient } from "./http-client";
 import { transformDispatchResponse } from "./transformers";
 
 /**
+ * Types from auto-generated API schema
+ * @typedef {import('../types/api').DispatchOptimizationRequest} DispatchOptimizationRequest
+ */
+
+/**
  * @typedef {import('./types').DispatchOptimizationResponse} DispatchOptimizationResponse
  */
 
 /**
  * Optimize dispatch
- * @param {Object} dispatchData
+ * @param {DispatchOptimizationRequest} dispatchData - Dispatch request (synced with backend)
  * @returns {Promise<DispatchOptimizationResponse>}
  */
 export function optimizeDispatch(dispatchData) {
