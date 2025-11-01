@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DynamicTable from "../components/DynamicTable";
 import PageLayout from "../components/PageLayout";
 import LoadingState from "../components/LoadingState";
@@ -100,7 +100,7 @@ function StationsPage() {
   ];
 
   // Update filteredStations when stations change
-  useMemo(() => {
+  useEffect(() => {
     setFilteredStations(stations);
   }, [stations]);
 

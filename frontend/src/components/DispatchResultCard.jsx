@@ -1,5 +1,7 @@
 import { XMarkIcon, TruckIcon, MapIcon } from "@heroicons/react/24/outline";
+
 import { formatMarkdownForDisplay } from "../utils/textFormatting";
+import { REQUEST_METHODS } from "../constants/config";
 
 function DispatchResultCard({ result, onClose }) {
   const {
@@ -242,7 +244,7 @@ function DispatchResultCard({ result, onClose }) {
                     </div>
                     <div className="text-gray-600 mt-1 truncate">
                       {station.fuel_type} • {station.fuel_level_percent}% full •
-                      {station.request_method === "IoT"
+                      {station.request_method === REQUEST_METHODS.IOT
                         ? " Auto-Request"
                         : " Manual"}
                     </div>
