@@ -4,6 +4,7 @@
  * @module services/trips-api
  */
 
+import { TRIPS_DEFAULT_LIMIT } from "../config/env";
 import { httpClient } from "./http-client";
 
 /**
@@ -16,10 +17,7 @@ import { httpClient } from "./http-client";
  * @returns {Promise<{ trips: Trip[], count?: number, total_available?: number }>}
  */
 export function getTrips({ limit, successfulOnly = false } = {}) {
-  const defaultLimit = parseInt(
-    import.meta.env.VITE_TRIPS_DEFAULT_LIMIT || "50"
-  );
-  const actualLimit = limit !== undefined ? limit : defaultLimit;
+  const actualLimit = limit !== undefined ? limit : TRIPS_DEFAULT_LIMIT;
   return httpClient.get("/trips", {
     limit: actualLimit,
     successful_only: successfulOnly,

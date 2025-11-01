@@ -5,10 +5,12 @@
  */
 
 import { useMutation } from "@tanstack/react-query";
+
 import {
   optimizeRoute,
   optimizeRouteWithTransform,
 } from "../services/routes-api";
+import { TIME_MODES } from "../constants/config";
 
 /**
  * Hook for route optimization mutation
@@ -24,7 +26,7 @@ export function useOptimizeRoute() {
         use_ai_optimization: true,
         departure_time: timeData.departureTime || null,
         arrival_time: timeData.arrivalTime || null,
-        time_mode: timeData.timeMode || "departure",
+        time_mode: timeData.timeMode || TIME_MODES.DEPARTURE,
         delivery_date: timeData.deliveryDate || null,
         vehicle_type: timeData.vehicleType || "fuel_delivery_truck",
         notes: timeData.notes || null,

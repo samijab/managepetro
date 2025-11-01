@@ -1,8 +1,10 @@
 import { TruckIcon } from "@heroicons/react/24/outline";
+
 import Card from "./Card";
-import StatusBadge from "./StatusBadge";
-import ListItem from "./ListItem";
 import Icon from "./Icon";
+import ListItem from "./ListItem";
+import StatusBadge from "./StatusBadge";
+import { TRUCK_STATUS } from "../constants/config";
 
 function AvailableTrucksCard({ trucks }) {
   // Filter trucks to only show those with valid plate_number or truck_id
@@ -48,9 +50,9 @@ function AvailableTrucksCard({ trucks }) {
               {truck.status && (
                 <StatusBadge
                   variant={
-                    truck.status === "active"
+                    truck.status === TRUCK_STATUS.ACTIVE
                       ? "success"
-                      : truck.status === "maintenance"
+                      : truck.status === TRUCK_STATUS.MAINTENANCE
                       ? "warning"
                       : "default"
                   }
