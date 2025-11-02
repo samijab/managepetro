@@ -34,3 +34,25 @@ export async function optimizeDispatchWithTransform(dispatchData) {
   const response = await optimizeDispatch(dispatchData);
   return transformDispatchResponse(response);
 }
+
+/**
+ * Get AI-powered dispatch recommendations
+ * @param {Object} params - Request parameters
+ * @param {string} params.depot_location - Starting depot location
+ * @param {string} params.llm_model - AI model to use
+ * @param {number} params.max_recommendations - Maximum recommendations to return
+ * @param {string} params.filter_region - Optional region filter
+ * @param {string} params.filter_city - Optional city filter
+ * @returns {Promise<Object>} Dispatch recommendations
+ */
+export function getDispatchRecommendations(params) {
+  return httpClient.post("/dispatch/recommendations", params);
+}
+
+/**
+ * Get available filters for dispatch recommendations
+ * @returns {Promise<Object>} Available regions and cities
+ */
+export function getDispatchFilters() {
+  return httpClient.get("/dispatch/filters");
+}

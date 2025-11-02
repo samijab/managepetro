@@ -10,7 +10,7 @@ import Header from "./components/Header";
 import RoutePage from "./pages/RoutePage";
 import StationsPage from "./pages/StationsPage";
 import DemoRoutePage from "./pages/DemoRoutePage";
-import DispatcherPage from "./pages/DispatcherPage";
+import ImprovedDispatcherPage from "./pages/ImprovedDispatcherPage";
 import { DEFAULT_LLM_MODEL } from "./constants/config";
 
 function App() {
@@ -64,7 +64,7 @@ function App() {
                   path="/dispatcher"
                   element={
                     <AuthGuard>
-                      <DispatcherPage />
+                      <ImprovedDispatcherPage />
                     </AuthGuard>
                   }
                 />

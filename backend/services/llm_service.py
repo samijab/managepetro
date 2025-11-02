@@ -212,6 +212,82 @@ class LLMService:
             print(f"Dispatch optimization failed: {e}")
             raise
 
+    async def get_dispatch_recommendations(
+        self,
+        depot_location: str,
+        session: AsyncSession,
+        llm_model: str = os.getenv("DEFAULT_LLM_MODEL", "models/gemini-2.5-flash"),
+        max_recommendations: int = 5,
+        filter_region: Optional[str] = None,
+        filter_city: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get AI-powered batch dispatch recommendations for optimal truck-station matching"""
+        try:
+            # Get all active trucks
+            trucks = await self._get_active_trucks_sqlalchemy(session)
+            if not trucks:
+                return {
+                    "recommendations": [],
+                    "summary": "No active trucks available",
+                    "total_trucks": 0,
+                    "total_stations": 0,
+                }
+
+            # Get stations needing fuel with optional filters
+            stations_needing_fuel = await self._get_stations_needing_refuel_sqlalchemy(
+                session, filter_region=filter_region, filter_city=filter_city
+            )
+            if not stations_needing_fuel:
+                filter_msg = ""
+                if filter_region:
+                    filter_msg = f" in region {filter_region}"
+                if filter_city:
+                    filter_msg = f" in {filter_city}"
+                return {
+                    "recommendations": [],
+                    "summary": f"No stations requiring fuel delivery{filter_msg}",
+                    "total_trucks": len(trucks),
+                    "total_stations": 0,
+                    "filter_region": filter_region,
+                    "filter_city": filter_city,
+                }
+
+            # Get weather for depot location
+            try:
+                depot_weather = await get_weather_async(depot_location)
+            except:
+                depot_weather = WeatherData(depot_location, 20, "Clear", 10, 50)
+
+            # Create batch dispatch recommendations prompt
+            prompt = self._create_batch_dispatch_prompt(
+                trucks=trucks,
+                stations=stations_needing_fuel,
+                depot_location=depot_location,
+                depot_weather=depot_weather,
+                max_recommendations=max_recommendations,
+            )
+
+            # Get AI recommendations
+            ai_response = await self._call_llm(prompt, llm_model)
+
+            # Parse and return recommendations
+            result = self._parse_batch_dispatch_response(
+                ai_response=ai_response,
+                trucks=trucks,
+                stations=stations_needing_fuel,
+                depot_location=depot_location,
+            )
+            
+            # Add filter information to response
+            result["filter_region"] = filter_region
+            result["filter_city"] = filter_city
+            
+            return result
+
+        except Exception as e:
+            print(f"Batch dispatch recommendations failed: {e}")
+            raise
+
     async def _get_database_data_sqlalchemy(
         self, session: AsyncSession, from_location: str, to_location: str
     ) -> DatabaseResult:
@@ -430,6 +506,57 @@ class LLMService:
             self._logger.exception("Failed to get trucks")
             return []
 
+    async def _get_active_trucks_sqlalchemy(
+        self, session: AsyncSession
+    ) -> List[TruckData]:
+        """Get all active trucks using SQLAlchemy 2.0"""
+        try:
+            # Query active trucks
+            stmt = select(Truck).where(Truck.status == "active")
+            result = await session.execute(stmt)
+            trucks_orm = result.scalars().all()
+
+            trucks = []
+            for truck_orm in trucks_orm:
+                # Get compartments
+                await session.refresh(truck_orm, attribute_names=["compartments"])
+                
+                compartments = []
+                for comp in truck_orm.compartments:
+                    compartments.append(
+                        {
+                            "compartment_number": comp.compartment_number,
+                            "fuel_type": comp.fuel_type,
+                            "capacity_liters": float(comp.capacity_liters),
+                            "current_level_liters": float(comp.current_level_liters),
+                        }
+                    )
+
+                trucks.append(
+                    TruckData(
+                        id=truck_orm.id,
+                        code=truck_orm.code,
+                        plate=truck_orm.plate,
+                        capacity_liters=(
+                            float(truck_orm.capacity_liters)
+                            if truck_orm.capacity_liters
+                            else None
+                        ),
+                        fuel_level_percent=truck_orm.fuel_level_percent,
+                        fuel_type=truck_orm.fuel_type,
+                        status=truck_orm.status,
+                        compartments=compartments,
+                    )
+                )
+            
+            return trucks
+        except SQLAlchemyError as e:
+            self._logger.exception("SQLAlchemy error getting active trucks")
+            return []
+        except Exception as e:
+            self._logger.exception("Failed to get active trucks")
+            return []
+
     async def _get_truck_by_id_sqlalchemy(
         self, session: AsyncSession, truck_id: str
     ) -> Optional[TruckData]:
@@ -509,22 +636,29 @@ class LLMService:
             return None
 
     async def _get_stations_needing_refuel_sqlalchemy(
-        self, session: AsyncSession
+        self, session: AsyncSession, filter_region: Optional[str] = None, filter_city: Optional[str] = None
     ) -> List[StationData]:
-        """Get stations that need refueling using SQLAlchemy 2.0"""
+        """Get stations that need refueling using SQLAlchemy 2.0 with optional filters"""
         try:
+            # Build filter conditions
+            filter_conditions = [
+                Station.current_level_liters.isnot(None),
+                Station.capacity_liters.isnot(None),
+                Station.capacity_liters > 0,
+                Station.low_fuel_threshold.isnot(None),
+                Station.current_level_liters < Station.low_fuel_threshold,
+            ]
+            
+            # Add regional filters if provided
+            if filter_region:
+                filter_conditions.append(Station.region == filter_region)
+            if filter_city:
+                filter_conditions.append(Station.city == filter_city)
+            
             # Calculate fuel percentage and filter for low fuel stations
             stmt = (
                 select(Station)
-                .where(
-                    and_(
-                        Station.current_level_liters.isnot(None),
-                        Station.capacity_liters.isnot(None),
-                        Station.capacity_liters > 0,
-                        Station.low_fuel_threshold.isnot(None),
-                        Station.current_level_liters < Station.low_fuel_threshold,
-                    )
-                )
+                .where(and_(*filter_conditions))
                 .order_by(
                     # Order by urgency - lowest fuel percentage first
                     (Station.current_level_liters / Station.capacity_liters).asc()
@@ -1067,5 +1201,87 @@ class LLMService:
             "depot_location": depot_location,
             "route_stops": route_stops,
             "stations_available": [station_available_dict(s) for s in stations],
+            "ai_analysis": ai_response,
+        }
+
+    def _create_batch_dispatch_prompt(
+        self,
+        trucks: List[TruckData],
+        stations: List[StationData],
+        depot_location: str,
+        depot_weather: WeatherData,
+        max_recommendations: int,
+    ) -> str:
+        """Create a prompt for batch dispatch recommendations"""
+        return self.prompt_service.format_batch_dispatch_prompt(
+            trucks=trucks,
+            stations=stations,
+            depot_location=depot_location,
+            depot_weather=depot_weather,
+            max_recommendations=max_recommendations,
+        )
+
+    def _parse_batch_dispatch_response(
+        self,
+        ai_response: str,
+        trucks: List[TruckData],
+        stations: List[StationData],
+        depot_location: str,
+    ) -> Dict[str, Any]:
+        """Parse AI response for batch dispatch recommendations"""
+        recommendations = []
+        
+        try:
+            # Extract recommendations section
+            recs_section = self._extract_section(ai_response, "DISPATCH RECOMMENDATIONS")
+            
+            if recs_section:
+                # Parse each recommendation
+                rec_blocks = recs_section.split("\n\n")
+                for block in rec_blocks:
+                    if not block.strip():
+                        continue
+                    
+                    rec = {}
+                    lines = block.strip().split("\n")
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith("Truck:"):
+                            rec["truck_code"] = line.replace("Truck:", "").strip()
+                        elif line.startswith("Priority:"):
+                            rec["priority"] = line.replace("Priority:", "").strip()
+                        elif line.startswith("Stations:"):
+                            rec["station_count"] = line.replace("Stations:", "").strip()
+                        elif line.startswith("Route:"):
+                            rec["route_summary"] = line.replace("Route:", "").strip()
+                        elif line.startswith("Total Distance:"):
+                            rec["total_distance"] = line.replace("Total Distance:", "").strip()
+                        elif line.startswith("Estimated Duration:"):
+                            rec["estimated_duration"] = line.replace("Estimated Duration:", "").strip()
+                        elif line.startswith("Total Fuel Delivery:"):
+                            rec["total_fuel_delivery"] = line.replace("Total Fuel Delivery:", "").strip()
+                        elif line.startswith("Rationale:"):
+                            rec["rationale"] = line.replace("Rationale:", "").strip()
+                    
+                    if rec.get("truck_code"):
+                        recommendations.append(rec)
+        except Exception:
+            self._logger.exception("Error parsing batch dispatch recommendations")
+        
+        # Extract summary
+        summary = ""
+        try:
+            summary_section = self._extract_section(ai_response, "EXECUTIVE SUMMARY")
+            if summary_section:
+                summary = summary_section.strip()
+        except Exception:
+            pass
+        
+        return {
+            "recommendations": recommendations,
+            "summary": summary or ai_response[:500],  # Fallback to first 500 chars
+            "total_trucks": len(trucks),
+            "total_stations": len(stations),
             "ai_analysis": ai_response,
         }
