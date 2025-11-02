@@ -34,3 +34,15 @@ export async function optimizeDispatchWithTransform(dispatchData) {
   const response = await optimizeDispatch(dispatchData);
   return transformDispatchResponse(response);
 }
+
+/**
+ * Get AI-powered dispatch recommendations
+ * @param {Object} params - Request parameters
+ * @param {string} params.depot_location - Starting depot location
+ * @param {string} params.llm_model - AI model to use
+ * @param {number} params.max_recommendations - Maximum recommendations to return
+ * @returns {Promise<Object>} Dispatch recommendations
+ */
+export function getDispatchRecommendations(params) {
+  return httpClient.post("/dispatch/recommendations", params);
+}

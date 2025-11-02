@@ -4,18 +4,25 @@
  * @module hooks/useDispatchQueries
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   optimizeDispatch,
   optimizeDispatchWithTransform,
+  getDispatchRecommendations,
 } from "../services/dispatch-api";
 import { truckQueryKeys } from "./useTruckQueries";
 import { stationQueryKeys } from "./useStationQueries";
 
 /**
- * Hook for dispatch optimization mutation
- * @returns {import('@tanstack/react-query').UseMutationResult}
+ * Query keys for dispatch operations
  */
+export const dispatchQueryKeys = {
+  recommendations: (params) => ["dispatch", "recommendations", params],
+};
+
+/**
+ * Hook for dispatch optimization mutation
+ * @returns {import('@tantml:function_calls>
 export function useOptimizeDispatch() {
   const queryClient = useQueryClient();
 
@@ -43,5 +50,21 @@ export function useOptimizeDispatchWithTransform() {
       queryClient.invalidateQueries({ queryKey: truckQueryKeys.trucks });
       queryClient.invalidateQueries({ queryKey: stationQueryKeys.stations });
     },
+  });
+}
+
+/**
+ * Hook for fetching AI-powered dispatch recommendations
+ * @param {Object} params - Request parameters
+ * @param {boolean} enabled - Whether the query should run
+ * @returns {import('@tanstack/react-query').UseQueryResult}
+ */
+export function useDispatchRecommendations(params, enabled = false) {
+  return useQuery({
+    queryKey: dispatchQueryKeys.recommendations(params),
+    queryFn: () => getDispatchRecommendations(params),
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
