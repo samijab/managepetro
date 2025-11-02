@@ -266,12 +266,12 @@ function ImprovedDispatcherPage() {
             </div>
             <button
               onClick={handleGetRecommendations}
-              disabled={recommendationsLoading}
+              disabled={showRecommendations && recommendationsLoading}
               className="px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all font-semibold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               <SparklesIcon className="w-6 h-6" />
               <span>
-                {recommendationsLoading
+                {showRecommendations && recommendationsLoading
                   ? "Analyzing..."
                   : "Get AI Recommendations"}
               </span>

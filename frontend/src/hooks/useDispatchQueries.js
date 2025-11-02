@@ -22,7 +22,8 @@ export const dispatchQueryKeys = {
 
 /**
  * Hook for dispatch optimization mutation
- * @returns {import('@tantml:function_calls>
+ * @returns {import('@tanstack/react-query').UseMutationResult}
+ */
 export function useOptimizeDispatch() {
   const queryClient = useQueryClient();
 
