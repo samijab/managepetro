@@ -166,6 +166,18 @@ class DispatchOptimizationRequest(BaseModel):
     )
 
 
+class DispatchRecommendationsRequest(BaseModel):
+    model_config = {"validate_assignment": True, "extra": "forbid"}
+
+    llm_model: str = Field(default="gemini-2.5-flash", description="AI model to use")
+    depot_location: str = Field(
+        default="Toronto", description="Starting depot location"
+    )
+    max_recommendations: int = Field(
+        default=5, description="Maximum number of dispatch recommendations to return"
+    )
+
+
 @app.post("/api/routes/optimize")
 async def optimize_route_ai(
     request: RouteRequest,
@@ -588,5 +600,29 @@ async def optimize_dispatch(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Dispatch optimization failed: {str(e)}"
+        )
+
+
+# Batch dispatch recommendations endpoint
+@app.post("/api/dispatch/recommendations")
+async def get_dispatch_recommendations(
+    request: DispatchRecommendationsRequest,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """AI-powered batch dispatch recommendations for optimal truck-station matching (Protected)"""
+    try:
+        result = await llm_service.get_dispatch_recommendations(
+            depot_location=request.depot_location,
+            session=session,
+            llm_model=request.llm_model,
+            max_recommendations=request.max_recommendations,
+        )
+        # Add user info to response
+        result["requested_by"] = current_user.username
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Dispatch recommendations failed: {str(e)}"
         )
 
