@@ -4,6 +4,7 @@ import { useStations } from "../hooks/useStationQueries";
 import {
   useOptimizeDispatch,
   useDispatchRecommendations,
+  useDispatchFilters,
 } from "../hooks/useDispatchQueries";
 import LoadingState from "../components/LoadingState";
 import ErrorMessage from "../components/ErrorMessage";
@@ -17,6 +18,7 @@ import {
   MapPinIcon,
   Cog6ToothIcon,
   ExclamationTriangleIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import Api from "../services/api";
 import {
@@ -36,6 +38,9 @@ function ImprovedDispatcherPage() {
   const [depotLocation, setDepotLocation] = useState(DEFAULT_DEPOT_LOCATION);
   const [llmModel, setLlmModel] = useState(DEFAULT_LLM_MODEL);
   const [dispatchError, setDispatchError] = useState(null);
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterCity, setFilterCity] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch data using React Query
   const {
@@ -49,6 +54,12 @@ function ImprovedDispatcherPage() {
     error: stationsError,
   } = useStations();
 
+  // Fetch available filters
+  const {
+    data: filtersData,
+    isPending: filtersLoading,
+  } = useDispatchFilters();
+
   // Fetch AI recommendations
   const {
     data: recommendationsData,
@@ -60,6 +71,8 @@ function ImprovedDispatcherPage() {
       depot_location: depotLocation,
       llm_model: llmModel,
       max_recommendations: 5,
+      filter_region: filterRegion || undefined,
+      filter_city: filterCity || undefined,
     },
     showRecommendations
   );
@@ -199,6 +212,103 @@ function ImprovedDispatcherPage() {
             </div>
           </div>
         )}
+
+        {/* Filter Panel */}
+        <div className="mt-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <FunnelIcon className="w-5 h-5 text-purple-600" />
+              <h3 className="text-sm font-semibold text-gray-900">
+                Filter by Region or City
+              </h3>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-xs text-purple-600 hover:text-purple-800 transition-colors"
+            >
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </button>
+          </div>
+          
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label
+                  htmlFor="filterRegion"
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  Region (Province/State)
+                </label>
+                <select
+                  id="filterRegion"
+                  value={filterRegion}
+                  onChange={(e) => {
+                    setFilterRegion(e.target.value);
+                    setFilterCity(""); // Clear city when region changes
+                  }}
+                  className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                >
+                  <option value="">All Regions</option>
+                  {filtersData?.regions?.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="filterCity"
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  City
+                </label>
+                <select
+                  id="filterCity"
+                  value={filterCity}
+                  onChange={(e) => setFilterCity(e.target.value)}
+                  className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                >
+                  <option value="">All Cities</option>
+                  {filtersData?.cities
+                    ?.filter((c) => !filterRegion || c.region === filterRegion)
+                    .map((cityData) => (
+                      <option key={cityData.city} value={cityData.city}>
+                        {cityData.city} ({cityData.region})
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setFilterRegion("");
+                    setFilterCity("");
+                  }}
+                  className="w-full px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {(filterRegion || filterCity) && (
+            <div className="mt-3 flex items-center space-x-2 text-sm">
+              <span className="text-gray-600">Active filters:</span>
+              {filterRegion && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                  Region: {filterRegion}
+                </span>
+              )}
+              {filterCity && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                  City: {filterCity}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -259,9 +369,16 @@ function ImprovedDispatcherPage() {
               </h2>
               <p className="text-blue-100 text-sm sm:text-base">
                 Our AI will analyze all {activeTrucks.length} active trucks and{" "}
-                {stationsNeedingFuel.length} stations to create the most
-                efficient delivery plan, prioritizing critical stations and
-                minimizing total distance.
+                {stationsNeedingFuel.length} stations{" "}
+                {filterRegion || filterCity ? (
+                  <span className="font-semibold">
+                    {filterCity ? `in ${filterCity}` : `in ${filterRegion}`}
+                  </span>
+                ) : (
+                  ""
+                )}{" "}
+                to create the most efficient delivery plan, prioritizing critical
+                stations and minimizing total distance.
               </p>
             </div>
             <button

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from typing import Optional
 from services.llm_service import LLMService
 from utils.serializers import (
     station_api_dict,
@@ -175,6 +176,12 @@ class DispatchRecommendationsRequest(BaseModel):
     )
     max_recommendations: int = Field(
         default=5, description="Maximum number of dispatch recommendations to return"
+    )
+    filter_region: Optional[str] = Field(
+        default=None, description="Filter stations by region (province/state)"
+    )
+    filter_city: Optional[str] = Field(
+        default=None, description="Filter stations by city"
     )
 
 
@@ -617,6 +624,8 @@ async def get_dispatch_recommendations(
             session=session,
             llm_model=request.llm_model,
             max_recommendations=request.max_recommendations,
+            filter_region=request.filter_region,
+            filter_city=request.filter_city,
         )
         # Add user info to response
         result["requested_by"] = current_user.username
@@ -625,4 +634,50 @@ async def get_dispatch_recommendations(
         raise HTTPException(
             status_code=500, detail=f"Dispatch recommendations failed: {str(e)}"
         )
+
+
+# Get available regions and cities for filtering
+@app.get("/api/dispatch/filters")
+async def get_dispatch_filters(
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Get available regions and cities for filtering dispatch recommendations (Protected)"""
+    try:
+        # Get distinct regions and cities from stations needing fuel
+        regions_stmt = select(StationORM.region).distinct().where(
+            and_(
+                StationORM.current_level_liters.isnot(None),
+                StationORM.capacity_liters.isnot(None),
+                StationORM.low_fuel_threshold.isnot(None),
+                StationORM.current_level_liters < StationORM.low_fuel_threshold,
+                StationORM.region.isnot(None),
+            )
+        ).order_by(StationORM.region)
+        
+        cities_stmt = select(StationORM.city, StationORM.region).distinct().where(
+            and_(
+                StationORM.current_level_liters.isnot(None),
+                StationORM.capacity_liters.isnot(None),
+                StationORM.low_fuel_threshold.isnot(None),
+                StationORM.current_level_liters < StationORM.low_fuel_threshold,
+                StationORM.city.isnot(None),
+            )
+        ).order_by(StationORM.region, StationORM.city)
+        
+        regions_result = await session.execute(regions_stmt)
+        cities_result = await session.execute(cities_stmt)
+        
+        regions = [r[0] for r in regions_result.all()]
+        cities_data = [{"city": c[0], "region": c[1]} for c in cities_result.all()]
+        
+        return {
+            "regions": regions,
+            "cities": cities_data,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get dispatch filters: {str(e)}"
+        )
+
 

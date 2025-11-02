@@ -218,6 +218,8 @@ class LLMService:
         session: AsyncSession,
         llm_model: str = os.getenv("DEFAULT_LLM_MODEL", "models/gemini-2.5-flash"),
         max_recommendations: int = 5,
+        filter_region: Optional[str] = None,
+        filter_city: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get AI-powered batch dispatch recommendations for optimal truck-station matching"""
         try:
@@ -231,16 +233,23 @@ class LLMService:
                     "total_stations": 0,
                 }
 
-            # Get stations needing fuel
+            # Get stations needing fuel with optional filters
             stations_needing_fuel = await self._get_stations_needing_refuel_sqlalchemy(
-                session
+                session, filter_region=filter_region, filter_city=filter_city
             )
             if not stations_needing_fuel:
+                filter_msg = ""
+                if filter_region:
+                    filter_msg = f" in region {filter_region}"
+                if filter_city:
+                    filter_msg = f" in {filter_city}"
                 return {
                     "recommendations": [],
-                    "summary": "No stations requiring fuel delivery",
+                    "summary": f"No stations requiring fuel delivery{filter_msg}",
                     "total_trucks": len(trucks),
                     "total_stations": 0,
+                    "filter_region": filter_region,
+                    "filter_city": filter_city,
                 }
 
             # Get weather for depot location
@@ -262,12 +271,18 @@ class LLMService:
             ai_response = await self._call_llm(prompt, llm_model)
 
             # Parse and return recommendations
-            return self._parse_batch_dispatch_response(
+            result = self._parse_batch_dispatch_response(
                 ai_response=ai_response,
                 trucks=trucks,
                 stations=stations_needing_fuel,
                 depot_location=depot_location,
             )
+            
+            # Add filter information to response
+            result["filter_region"] = filter_region
+            result["filter_city"] = filter_city
+            
+            return result
 
         except Exception as e:
             print(f"Batch dispatch recommendations failed: {e}")
@@ -621,22 +636,29 @@ class LLMService:
             return None
 
     async def _get_stations_needing_refuel_sqlalchemy(
-        self, session: AsyncSession
+        self, session: AsyncSession, filter_region: Optional[str] = None, filter_city: Optional[str] = None
     ) -> List[StationData]:
-        """Get stations that need refueling using SQLAlchemy 2.0"""
+        """Get stations that need refueling using SQLAlchemy 2.0 with optional filters"""
         try:
+            # Build filter conditions
+            filter_conditions = [
+                Station.current_level_liters.isnot(None),
+                Station.capacity_liters.isnot(None),
+                Station.capacity_liters > 0,
+                Station.low_fuel_threshold.isnot(None),
+                Station.current_level_liters < Station.low_fuel_threshold,
+            ]
+            
+            # Add regional filters if provided
+            if filter_region:
+                filter_conditions.append(Station.region == filter_region)
+            if filter_city:
+                filter_conditions.append(Station.city == filter_city)
+            
             # Calculate fuel percentage and filter for low fuel stations
             stmt = (
                 select(Station)
-                .where(
-                    and_(
-                        Station.current_level_liters.isnot(None),
-                        Station.capacity_liters.isnot(None),
-                        Station.capacity_liters > 0,
-                        Station.low_fuel_threshold.isnot(None),
-                        Station.current_level_liters < Station.low_fuel_threshold,
-                    )
-                )
+                .where(and_(*filter_conditions))
                 .order_by(
                     # Order by urgency - lowest fuel percentage first
                     (Station.current_level_liters / Station.capacity_liters).asc()

@@ -9,6 +9,7 @@ import {
   optimizeDispatch,
   optimizeDispatchWithTransform,
   getDispatchRecommendations,
+  getDispatchFilters,
 } from "../services/dispatch-api";
 import { truckQueryKeys } from "./useTruckQueries";
 import { stationQueryKeys } from "./useStationQueries";
@@ -18,6 +19,7 @@ import { stationQueryKeys } from "./useStationQueries";
  */
 export const dispatchQueryKeys = {
   recommendations: (params) => ["dispatch", "recommendations", params],
+  filters: ["dispatch", "filters"],
 };
 
 /**
@@ -66,6 +68,19 @@ export function useDispatchRecommendations(params, enabled = false) {
     queryFn: () => getDispatchRecommendations(params),
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Hook for fetching available dispatch filters
+ * @returns {import('@tanstack/react-query').UseQueryResult}
+ */
+export function useDispatchFilters() {
+  return useQuery({
+    queryKey: dispatchQueryKeys.filters,
+    queryFn: () => getDispatchFilters(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
   });
 }
