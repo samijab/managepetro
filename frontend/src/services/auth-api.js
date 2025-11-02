@@ -8,10 +8,17 @@ import { rawAxios } from "./http-client";
 import { API_BASE_URL } from "../config/env";
 
 /**
+ * Types from auto-generated API schema
+ * @typedef {import('../types/api').UserCreate} UserCreate
+ * @typedef {import('../types/api').User} User
+ * @typedef {import('../types/api').Token} Token
+ */
+
+/**
  * Login user
  * @param {string} username
  * @param {string} password
- * @returns {Promise<{access_token: string}>}
+ * @returns {Promise<Token>}
  */
 export async function login(username, password) {
   const formData = new FormData();
@@ -23,11 +30,8 @@ export async function login(username, password) {
 
 /**
  * Register user
- * @param {Object} userData
- * @param {string} userData.username
- * @param {string} userData.email
- * @param {string} userData.password
- * @returns {Promise<any>}
+ * @param {UserCreate} userData - User registration data (synced with backend)
+ * @returns {Promise<User>}
  */
 export function register(userData) {
   return rawAxios
@@ -37,7 +41,7 @@ export function register(userData) {
 
 /**
  * Get current user info
- * @returns {Promise<any>}
+ * @returns {Promise<User>}
  */
 export function me() {
   return rawAxios

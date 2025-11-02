@@ -7,6 +7,11 @@
 import { httpClient } from "./http-client";
 
 /**
+ * Types from auto-generated API schema
+ * @typedef {import('../types/api').TruckCreate} TruckCreate
+ */
+
+/**
  * @typedef {import('./types').Truck} Truck
  */
 
@@ -29,7 +34,7 @@ export function getTruck(id) {
 
 /**
  * Create a truck
- * @param {Partial<Truck>} payload
+ * @param {TruckCreate} payload - Truck creation data (synced with backend)
  * @returns {Promise<{ truck: Truck } | Truck>}
  */
 export function createTruck(payload) {
